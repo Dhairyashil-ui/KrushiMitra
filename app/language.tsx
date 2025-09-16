@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,23 +6,12 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
-  Animated,
-  Dimensions,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Globe,
-  Zap,
-  Activity,
-  Cpu,
-  CheckCircle,
-  ArrowRight,
-  Sparkles,
-} from 'lucide-react-native';
-
-const { width, height } = Dimensions.get('window');
+import { Wheat, CheckCircle } from 'lucide-react-native';
 
 const languages = [
   { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া' },
@@ -36,322 +25,113 @@ const languages = [
   { code: 'mni', name: 'Manipuri', nativeName: 'ꯃꯤꯇꯩ ꯂꯣꯟ' },
   { code: 'mr', name: 'Marathi', nativeName: 'मराठी' },
   { code: 'ne', name: 'Nepali', nativeName: 'नेपाली' },
-  { code: 'or', name: 'Oriya', nativeName: 'ଓଡ଼ିଆ' },
+  { code: 'or', name: 'Oriya (Odia)', nativeName: 'ଓଡ଼ିଆ' },
   { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ' },
   { code: 'sa', name: 'Sanskrit', nativeName: 'संस्कृतम्' },
   { code: 'sd', name: 'Sindhi', nativeName: 'سنڌي' },
   { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
   { code: 'te', name: 'Telugu', nativeName: 'తెలుగు' },
   { code: 'ur', name: 'Urdu', nativeName: 'اردو' },
-  { code: 'brx', name: 'Bodo', nativeName: 'बर्' },
-  { code: 'sat', name: 'Santhali', nativeName: 'ᱥᱟᱱᱛᱟᱲᱤ' },
-  { code: 'mai', name: 'Maithili', nativeName: 'मैथिली' },
-  { code: 'doi', name: 'Dogri', nativeName: 'डोगरी' },
+  { code: 'en', name: 'English', nativeName: 'English' },
 ];
 
 export default function LanguageScreen() {
-  const [selectedLanguage, setSelectedLanguage] = useState('hi');
+  const [selectedLanguage, setSelectedLanguage] = useState('');
   const router = useRouter();
-  const fadeAnimation = useRef(new Animated.Value(0)).current;
-  const slideAnimation = useRef(new Animated.Value(50)).current;
-  const glowAnimation = useRef(new Animated.Value(0)).current;
-  const rotateAnimation = useRef(new Animated.Value(0)).current;
-  const particleAnimation = useRef(new Animated.Value(0)).current;
-  const staggerAnimation = useRef(languages.map(() => new Animated.Value(0))).current;
 
-  useEffect(() => {
-    startAnimations();
-  }, []);
-
-  const startAnimations = () => {
-    // Header entrance animation
-    Animated.sequence([
-      Animated.timing(fadeAnimation, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnimation, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Staggered language items animation
-    const staggerAnimations = staggerAnimation.map((anim, index) => 
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 500,
-        delay: index * 50,
-        useNativeDriver: true,
-      })
-    );
-    
-    Animated.stagger(50, staggerAnimations).start();
-
-    // Continuous glow animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnimation, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(glowAnimation, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-      ])
-    ).start();
-
-    // Rotation animation
-    Animated.loop(
-      Animated.timing(rotateAnimation, {
-        toValue: 1,
-        duration: 8000,
-        useNativeDriver: true,
-      })
-    ).start();
-
-    // Particle animation
-    Animated.loop(
-      Animated.timing(particleAnimation, {
-        toValue: 1,
-        duration: 5000,
-        useNativeDriver: true,
-      })
-    ).start();
+  const handleLanguageSelect = (languageCode: string) => {
+    setSelectedLanguage(languageCode);
   };
 
-  const handleLanguageSelect = async (languageCode: string) => {
-    setSelectedLanguage(languageCode);
+  const handleContinue = async () => {
+    if (!selectedLanguage) return;
     
-    // Selection animation
-    Animated.sequence([
-      Animated.timing(fadeAnimation, {
-        toValue: 0.7,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnimation, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    await AsyncStorage.setItem('selectedLanguage', languageCode);
-    
-    // Navigate with delay for animation
-    setTimeout(() => {
+    try {
+      await AsyncStorage.setItem('selectedLanguage', selectedLanguage);
       router.replace('/auth/login');
-    }, 800);
+    } catch (error) {
+      console.error('Error saving language preference:', error);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#0a0a0a', '#1a1a2e', '#16213e', '#0f3460']}
+        colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
+        style={styles.backgroundGradient}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientContainer}
+        end={{ x: 1, y: 0.3 }}
       >
-        {/* Animated Background Particles */}
-        <Animated.View style={[
-          styles.particle1,
-          {
-            opacity: particleAnimation.interpolate({
-              inputRange: [0, 0.5, 1],
-              outputRange: [0.3, 1, 0.3],
-            }),
-            transform: [{
-              translateX: particleAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-50, width + 50],
-              })
-            }]
-          }
-        ]} />
-        
-        <Animated.View style={[
-          styles.particle2,
-          {
-            opacity: particleAnimation.interpolate({
-              inputRange: [0, 0.3, 0.7, 1],
-              outputRange: [0.2, 0.8, 0.8, 0.2],
-            }),
-            transform: [{
-              translateY: particleAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [height, -100],
-              })
-            }]
-          }
-        ]} />
-
-        {/* Header Section */}
-        <Animated.View style={[
-          styles.header,
-          {
-            opacity: fadeAnimation,
-            transform: [{ translateY: slideAnimation }],
-          }
-        ]}>
-          <LinearGradient
-            colors={['rgba(0, 212, 255, 0.2)', 'rgba(0, 102, 255, 0.1)', 'transparent']}
-            style={styles.headerGradient}
-          >
-            <View style={styles.titleContainer}>
-              <Animated.View style={[
-                styles.iconContainer,
-                {
-                  transform: [{
-                    rotate: rotateAnimation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '360deg'],
-                    })
-                  }]
-                }
-              ]}>
-                <LinearGradient
-                  colors={['#00d4ff', '#0099cc', '#0066ff']}
-                  style={styles.iconGradient}
-                >
-                  <Globe size={32} color="#fff" />
-                </LinearGradient>
-              </Animated.View>
-              
-              <Text style={styles.title}>⚡ NEURAL LANGUAGE MATRIX</Text>
-              <Text style={styles.subtitle}>Configure your preferred linguistic interface protocol</Text>
-              
-              <Animated.View style={[
-                styles.energyBar,
-                {
-                  width: glowAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [width * 0.3, width * 0.8],
-                  }),
-                }
-              ]} />
+        {/* Top Section - Logo and App Name */}
+        <View style={styles.topSection}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logoWrapper}>
+              <Wheat size={40} color="#4CAF50" />
             </View>
-          </LinearGradient>
-        </Animated.View>
-
-        {/* Language Selection List */}
-        <ScrollView style={styles.languageList} showsVerticalScrollIndicator={false}>
-          {languages.map((language, index) => (
-            <Animated.View
-              key={language.code}
-              style={{
-                opacity: staggerAnimation[index],
-                transform: [{
-                  translateX: staggerAnimation[index].interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [100, 0],
-                  })
-                }]
-              }}
-            >
+            <Text style={styles.appName}>KrushiAI</Text>
+          </View>
+        </View>
+        
+        {/* Heading Section */}
+        <View style={styles.headingSection}>
+          <Text style={styles.mainHeading}>Choose Your Language</Text>
+          <Text style={styles.subHeading}>Select your preferred language to talk with the AI assistant</Text>
+        </View>
+        
+        {/* Language Options Section */}
+        <ScrollView style={styles.languageScrollContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.languagesContainer}>
+            {languages.map((language) => (
               <TouchableOpacity
+                key={language.code}
                 style={[
-                  styles.languageItem,
-                  selectedLanguage === language.code && styles.selectedLanguageItem,
+                  styles.languageButton,
+                  selectedLanguage === language.code && styles.selectedLanguageButton,
                 ]}
                 onPress={() => handleLanguageSelect(language.code)}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <LinearGradient
-                  colors={selectedLanguage === language.code 
-                    ? ['rgba(0, 212, 255, 0.3)', 'rgba(0, 102, 255, 0.2)', 'rgba(26, 26, 46, 0.9)']
-                    : ['rgba(26, 26, 46, 0.6)', 'rgba(22, 33, 62, 0.7)', 'rgba(15, 52, 96, 0.5)']
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.languageGradient}
-                >
-                  <View style={styles.languageContent}>
-                    <View style={styles.languageInfo}>
-                      <View style={styles.nameContainer}>
-                        <Activity 
-                          size={16} 
-                          color={selectedLanguage === language.code ? '#00d4ff' : '#00ff88'} 
-                        />
-                        <Text style={[
-                          styles.languageName,
-                          selectedLanguage === language.code && styles.selectedLanguageName,
-                        ]}>
-                          {language.name}
-                        </Text>
-                      </View>
-                      <Text style={[
-                        styles.nativeLanguageName,
-                        selectedLanguage === language.code && styles.selectedNativeLanguageName,
-                      ]}>
-                        {language.nativeName}
-                      </Text>
-                    </View>
-                    
-                    {selectedLanguage === language.code && (
-                      <Animated.View style={[
-                        styles.selectedIndicator,
-                        {
-                          opacity: glowAnimation.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.8, 1],
-                          }),
-                          transform: [{
-                            scale: glowAnimation.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [1, 1.1],
-                            })
-                          }]
-                        }
-                      ]}>
-                        <LinearGradient
-                          colors={['#00d4ff', '#0099cc', '#0066ff']}
-                          style={styles.indicatorGradient}
-                        >
-                          <CheckCircle size={20} color="#fff" />
-                        </LinearGradient>
-                      </Animated.View>
-                    )}
-                    
-                    <ArrowRight 
-                      size={20} 
-                      color={selectedLanguage === language.code ? '#00d4ff' : '#666'} 
-                      style={styles.arrowIcon}
-                    />
+                <View style={styles.languageContent}>
+                  <View style={styles.languageTextContainer}>
+                    <Text style={[
+                      styles.languageName,
+                      selectedLanguage === language.code && styles.selectedLanguageName,
+                    ]}>
+                      {language.name}
+                    </Text>
+                    <Text style={[
+                      styles.nativeLanguageName,
+                      selectedLanguage === language.code && styles.selectedNativeLanguageName,
+                    ]}>
+                      {language.nativeName}
+                    </Text>
                   </View>
                   
                   {selectedLanguage === language.code && (
-                    <View style={styles.selectedBorder}>
-                      <Animated.View style={[
-                        styles.pulseRing,
-                        {
-                          opacity: glowAnimation.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.3, 0.7],
-                          }),
-                          transform: [{
-                            scale: glowAnimation.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [1, 1.05],
-                            })
-                          }]
-                        }
-                      ]} />
+                    <View style={styles.checkIconContainer}>
+                      <CheckCircle size={24} color="#4CAF50" />
                     </View>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
-            </Animated.View>
-          ))}
-          
-          {/* Bottom Spacer */}
-          <View style={styles.bottomSpacer} />
+            ))}
+          </View>
         </ScrollView>
+        
+        {/* Bottom Section - Continue Button */}
+        <View style={styles.bottomSection}>
+          <TouchableOpacity 
+            style={[
+              styles.continueButton,
+              !selectedLanguage && styles.continueButtonDisabled
+            ]}
+            onPress={handleContinue}
+            disabled={!selectedLanguage}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.continueButtonText}>Continue</Text>
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -360,183 +140,165 @@ export default function LanguageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#FFFFFF',
   },
-  gradientContainer: {
+  backgroundGradient: {
     flex: 1,
   },
-  particle1: {
-    position: 'absolute',
-    top: height * 0.2,
-    width: 3,
-    height: 3,
-    backgroundColor: '#00d4ff',
-    borderRadius: 1.5,
-    shadowColor: '#00d4ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 3,
+  
+  // Top Section
+  topSection: {
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 20,
   },
-  particle2: {
-    position: 'absolute',
-    right: width * 0.1,
-    width: 2,
-    height: 2,
-    backgroundColor: '#00ff88',
-    borderRadius: 1,
-    shadowColor: '#00ff88',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 2,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(0, 212, 255, 0.3)',
-  },
-  headerGradient: {
-    borderRadius: 20,
-    padding: 20,
-  },
-  titleContainer: {
+  logoContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  iconContainer: {
-    marginBottom: 16,
-  },
-  iconGradient: {
+  logoWrapper: {
     width: 60,
     height: 60,
     borderRadius: 30,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-    letterSpacing: 2,
-    textShadowColor: 'rgba(0, 212, 255, 0.8)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#00d4ff',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    opacity: 0.8,
-    marginBottom: 16,
-  },
-  energyBar: {
-    height: 3,
-    backgroundColor: '#00d4ff',
-    borderRadius: 2,
-    shadowColor: '#00d4ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-  },
-  languageList: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  languageItem: {
-    marginVertical: 6,
-    borderRadius: 20,
-    overflow: 'hidden',
-    elevation: 5,
-    shadowColor: '#00d4ff',
-    shadowOffset: { width: 0, height: 3 },
+    marginRight: 16,
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  selectedLanguageItem: {
-    elevation: 12,
-    shadowOpacity: 0.4,
-    shadowRadius: 15,
+  appName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
-  languageGradient: {
-    borderRadius: 20,
+  
+  // Heading Section
+  headingSection: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingBottom: 30,
+  },
+  mainHeading: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 12,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  subHeading: {
+    fontSize: 16,
+    color: '#757575',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  
+  // Language Options Section
+  languageScrollContainer: {
+    flex: 1,
+    paddingHorizontal: 32,
+  },
+  languagesContainer: {
+    gap: 12,
+    paddingBottom: 20,
+  },
+  languageButton: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  selectedLanguageButton: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   languageContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
-    position: 'relative',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
-  languageInfo: {
+  languageTextContainer: {
     flex: 1,
   },
-  nameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
   languageName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginLeft: 8,
-    letterSpacing: 0.5,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 4,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   selectedLanguageName: {
-    color: '#ffffff',
-    textShadowColor: 'rgba(0, 212, 255, 0.5)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 5,
+    color: '#FFFFFF',
   },
   nativeLanguageName: {
     fontSize: 14,
-    color: '#b0c4de',
-    marginLeft: 24,
-    letterSpacing: 0.3,
+    color: '#757575',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   selectedNativeLanguageName: {
-    color: '#e0e6ed',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
-  selectedIndicator: {
-    marginRight: 12,
+  checkIconContainer: {
+    marginLeft: 16,
   },
-  indicatorGradient: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+  
+  // Bottom Section
+  bottomSection: {
+    paddingHorizontal: 32,
+    paddingVertical: 20,
+    paddingBottom: 40,
+  },
+  continueButton: {
+    width: '100%',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 18,
+    borderRadius: 8,
     alignItems: 'center',
-    shadowColor: '#00d4ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+    justifyContent: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
     shadowRadius: 8,
+    elevation: 6,
   },
-  arrowIcon: {
-    marginLeft: 8,
+  continueButtonDisabled: {
+    backgroundColor: '#A5D6A7',
+    shadowOpacity: 0.1,
   },
-  selectedBorder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 20,
-  },
-  pulseRing: {
-    position: 'absolute',
-    top: -2,
-    left: -2,
-    right: -2,
-    bottom: -2,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: '#00d4ff',
-  },
-  bottomSpacer: {
-    height: 40,
+  continueButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
 });

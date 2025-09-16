@@ -23,7 +23,7 @@ export default function AIChatScreen() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hello! I\'m your AI NEXUS farming assistant. I can help you with crop care, weather updates, pest control, and farming advice. What would you like to know?',
+      text: 'Hello! I\'m your KrushiAi farming assistant. I can help you with crop care, weather updates, pest control, and farming advice. What would you like to know?',
       isUser: false,
       timestamp: new Date(),
     },
@@ -139,7 +139,7 @@ export default function AIChatScreen() {
               <Bot size={24} color="#FFFFFF" />
             </LinearGradient>
             <View>
-              <Text style={styles.headerTitle}>AI NEXUS</Text>
+              <Text style={styles.headerTitle}>KrushiAi</Text>
               <Text style={styles.headerSubtitle}>Neural Farming Assistant</Text>
             </View>
           </View>

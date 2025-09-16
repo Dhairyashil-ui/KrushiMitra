@@ -11,7 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { ArrowLeft } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Wheat, ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 export default function SignUpScreen() {
@@ -24,6 +25,7 @@ export default function SignUpScreen() {
   });
   const [otpSent, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
@@ -33,12 +35,7 @@ export default function SignUpScreen() {
   };
 
   const handleSendOTP = async () => {
-    if (!formData.phoneNumber.trim()) {
-      Alert.alert('Error', 'Please enter a valid mobile number');
-      return;
-    }
-
-    if (formData.phoneNumber.length < 10) {
+    if (!formData.phoneNumber.trim() || formData.phoneNumber.length !== 10) {
       Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
       return;
     }
@@ -53,7 +50,7 @@ export default function SignUpScreen() {
     }, 1500);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate all required fields
     if (!formData.farmerName.trim()) {
       Alert.alert('Error', 'Please enter farmer name');
@@ -80,17 +77,22 @@ export default function SignUpScreen() {
       return;
     }
 
+    setLoading(true);
+    
     // Simulate successful registration
-    Alert.alert(
-      'Success',
-      'Registration completed successfully!',
-      [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/(tabs)'),
-        },
-      ]
-    );
+    setTimeout(() => {
+      setLoading(false);
+      Alert.alert(
+        'Success',
+        'Registration completed successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/(tabs)'),
+          },
+        ]
+      );
+    }, 1500);
   };
 
   const handleBack = () => {
@@ -103,134 +105,167 @@ export default function SignUpScreen() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <ArrowLeft size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Sign Up</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        <ScrollView 
-          style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+        <LinearGradient
+          colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
+          style={styles.backgroundGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0.3 }}
         >
-          {/* Form Fields */}
-          <View style={styles.formContainer}>
+          {/* Top Section - Logo and App Name */}
+          <View style={styles.topSection}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <ArrowLeft size={24} color="#4CAF50" />
+            </TouchableOpacity>
             
-            {/* Farmer Name */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>
-                Farmer Name <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Farmer Name"
-                placeholderTextColor="#999"
-                value={formData.farmerName}
-                onChangeText={(value) => handleInputChange('farmerName', value)}
-                autoCapitalize="words"
-              />
-            </View>
-
-            {/* Phone Number with Send OTP */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>
-                Phone Number <Text style={styles.required}>*</Text>
-              </Text>
-              <View style={styles.phoneContainer}>
-                <TextInput
-                  style={[styles.input, styles.phoneInput]}
-                  placeholder="Enter Mobile Number"
-                  placeholderTextColor="#999"
-                  value={formData.phoneNumber}
-                  onChangeText={(value) => handleInputChange('phoneNumber', value)}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.otpButton,
-                    (!formData.phoneNumber || otpLoading) && styles.otpButtonDisabled
-                  ]}
-                  onPress={handleSendOTP}
-                  disabled={!formData.phoneNumber || otpLoading}
-                >
-                  <Text style={styles.otpButtonText}>
-                    {otpLoading ? 'Sending...' : 'Send OTP'}
-                  </Text>
-                </TouchableOpacity>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoWrapper}>
+                <Wheat size={40} color="#4CAF50" />
               </View>
+              <Text style={styles.appName}>KrushiAI</Text>
             </View>
-
-            {/* Land Size */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>
-                Land Size <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Land Size (in acres/hectares)"
-                placeholderTextColor="#999"
-                value={formData.landSize}
-                onChangeText={(value) => handleInputChange('landSize', value)}
-              />
-            </View>
-
-            {/* Soil Type */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>
-                Soil Type <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Soil Type"
-                placeholderTextColor="#999"
-                value={formData.soilType}
-                onChangeText={(value) => handleInputChange('soilType', value)}
-                autoCapitalize="words"
-              />
-            </View>
-
-            {/* OTP Field */}
-            {otpSent && (
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>
-                  OTP <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter OTP"
-                  placeholderTextColor="#999"
-                  value={formData.otp}
-                  onChangeText={(value) => handleInputChange('otp', value)}
-                  keyboardType="numeric"
-                  maxLength={6}
-                />
-              </View>
-            )}
+            
+            <View style={styles.placeholder} />
           </View>
-        </ScrollView>
+          
+          {/* Heading Section */}
+          <View style={styles.headingSection}>
+            <Text style={styles.mainHeading}>Create Account</Text>
+            <Text style={styles.subHeading}>Fill in your details to get started</Text>
+          </View>
 
-        {/* Submit Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              (!formData.farmerName || !formData.phoneNumber || !formData.landSize || 
-               !formData.soilType || !otpSent || !formData.otp) && styles.submitButtonDisabled
-            ]}
-            onPress={handleSubmit}
-            disabled={
-              !formData.farmerName || !formData.phoneNumber || !formData.landSize || 
-              !formData.soilType || !otpSent || !formData.otp
-            }
+          <ScrollView 
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.submitButtonText}>Submit</Text>
-          </TouchableOpacity>
-        </View>
+            {/* Form Fields */}
+            <View style={styles.formContainer}>
+              
+              {/* Farmer Name */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>FARMER NAME *</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter Farmer Name"
+                    placeholderTextColor="#999"
+                    value={formData.farmerName}
+                    onChangeText={(value) => handleInputChange('farmerName', value)}
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+
+              {/* Phone Number with Send OTP */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>PHONE NUMBER *</Text>
+                <View style={styles.phoneInputRow}>
+                  <View style={styles.phoneInputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter Mobile Number"
+                      placeholderTextColor="#999"
+                      value={formData.phoneNumber}
+                      onChangeText={(value) => handleInputChange('phoneNumber', value)}
+                      keyboardType="phone-pad"
+                      maxLength={10}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.otpButton,
+                      (!formData.phoneNumber || formData.phoneNumber.length !== 10 || otpLoading) && styles.otpButtonDisabled
+                    ]}
+                    onPress={handleSendOTP}
+                    disabled={!formData.phoneNumber || formData.phoneNumber.length !== 10 || otpLoading}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.otpButtonText}>
+                      {otpLoading ? 'Sending...' : 'Send OTP'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Land Size */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>LAND SIZE *</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter Land Size (in acres/hectares)"
+                    placeholderTextColor="#999"
+                    value={formData.landSize}
+                    onChangeText={(value) => handleInputChange('landSize', value)}
+                  />
+                </View>
+              </View>
+
+              {/* Soil Type */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>SOIL TYPE *</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter Soil Type"
+                    placeholderTextColor="#999"
+                    value={formData.soilType}
+                    onChangeText={(value) => handleInputChange('soilType', value)}
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+
+              {/* OTP Field */}
+              {otpSent && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>OTP *</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter OTP"
+                      placeholderTextColor="#999"
+                      value={formData.otp}
+                      onChangeText={(value) => handleInputChange('otp', value)}
+                      keyboardType="numeric"
+                      maxLength={6}
+                      autoComplete="sms-otp"
+                      textContentType="oneTimeCode"
+                    />
+                  </View>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+
+          {/* Bottom Section - Submit Button */}
+          <View style={styles.bottomSection}>
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                (loading || !formData.farmerName || !formData.phoneNumber || !formData.landSize || 
+                 !formData.soilType || !otpSent || !formData.otp) && styles.submitButtonDisabled
+              ]}
+              onPress={handleSubmit}
+              disabled={
+                loading || !formData.farmerName || !formData.phoneNumber || !formData.landSize || 
+                !formData.soilType || !otpSent || !formData.otp
+              }
+              activeOpacity={0.8}
+            >
+              <Text style={styles.submitButtonText}>
+                {loading ? 'Creating Account...' : 'CREATE ACCOUNT'}
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Login Link */}
+            <TouchableOpacity onPress={() => router.push('/auth/login')} style={styles.loginContainer}>
+              <Text style={styles.loginText}>
+                Already have an account? <Text style={styles.loginLink}>Login</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -239,29 +274,92 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
   },
-  header: {
+  backgroundGradient: {
+    flex: 1,
+  },
+  
+  // Top Section
+  topSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 32,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
   backButton: {
-    padding: 5,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  title: {
-    fontSize: 20,
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  logoWrapper: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  appName: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
+    color: '#4CAF50',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   placeholder: {
-    width: 34, // Same width as back button for center alignment
+    width: 44,
   },
+  
+  // Heading Section
+  headingSection: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingBottom: 20,
+  },
+  mainHeading: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 8,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  subHeading: {
+    fontSize: 16,
+    color: '#757575',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  
+  // Form Section
   scrollContainer: {
     flex: 1,
   },
@@ -269,76 +367,116 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   formContainer: {
-    padding: 20,
+    paddingHorizontal: 32,
   },
-  fieldContainer: {
-    marginBottom: 20,
+  inputGroup: {
+    width: '100%',
+    marginBottom: 24,
   },
-  label: {
-    fontSize: 16,
+  inputLabel: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#333',
+    color: '#757575',
     marginBottom: 8,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
-  required: {
-    color: '#e53e3e',
-    fontSize: 16,
+  inputContainer: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
   },
   input: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     fontSize: 16,
-    color: '#333',
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
+    color: '#333333',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
-  phoneContainer: {
+  phoneInputRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
+    alignItems: 'flex-end',
   },
-  phoneInput: {
+  phoneInputContainer: {
     flex: 1,
   },
   otpButton: {
     backgroundColor: '#2E7D32',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderRadius: 8,
-    justifyContent: 'center',
     alignItems: 'center',
-    minWidth: 80,
+    justifyContent: 'center',
+    minWidth: 100,
+    shadowColor: '#2E7D32',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   otpButtonDisabled: {
-    backgroundColor: '#cccccc',
+    backgroundColor: '#A5D6A7',
+    shadowOpacity: 0.1,
   },
   otpButtonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
-  buttonContainer: {
-    padding: 20,
-    paddingTop: 10,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+  
+  // Bottom Section
+  bottomSection: {
+    paddingHorizontal: 32,
+    paddingVertical: 20,
+    paddingBottom: 40,
   },
   submitButton: {
+    width: '100%',
     backgroundColor: '#2E7D32',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 18,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#2E7D32',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   submitButtonDisabled: {
-    backgroundColor: '#cccccc',
+    backgroundColor: '#A5D6A7',
+    shadowOpacity: 0.1,
   },
   submitButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  loginContainer: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  loginText: {
+    fontSize: 16,
+    color: '#757575',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  loginLink: {
+    color: '#4CAF50',
+    fontWeight: '600',
   },
 });

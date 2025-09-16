@@ -6,7 +6,8 @@ import {
   TouchableOpacity, 
   SafeAreaView, 
   ScrollView,
-  Animated
+  Animated,
+  Platform
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
@@ -19,7 +20,9 @@ import {
   Trophy,
   TrendingUp,
   Award,
-  Target
+  Target,
+  Wheat,
+  Sparkles
 } from 'lucide-react-native';
 
 interface Event {
@@ -132,22 +135,22 @@ export default function EventsScreen() {
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'workshop':
-        return <Target size={20} color="#3B82F6" />;
+        return <Target size={20} color="#4CAF50" />;
       case 'webinar':
-        return <PlayCircle size={20} color="#10B981" />;
+        return <PlayCircle size={20} color="#4CAF50" />;
       case 'competition':
-        return <Trophy size={20} color="#F59E0B" />;
+        return <Trophy size={20} color="#FF9800" />;
       default:
-        return <Calendar size={20} color="#6B7280" />;
+        return <Calendar size={20} color="#4CAF50" />;
     }
   };
 
   const getStatusColor = (status: string): [string, string] => {
     switch (status) {
       case 'live':
-        return ['#EF4444', '#DC2626'];
+        return ['#4CAF50', '#2E7D32'];
       case 'upcoming':
-        return ['#3B82F6', '#2563EB'];
+        return ['#4CAF50', '#2E7D32'];
       case 'completed':
         return ['#6B7280', '#4B5563'];
       default:
@@ -163,7 +166,7 @@ export default function EventsScreen() {
   const renderEvent = (event: Event) => (
     <TouchableOpacity key={event.id} style={styles.eventCard}>
       <LinearGradient
-        colors={['#FFFFFF', '#F8FAFC']}
+        colors={['#FFFFFF', '#F1F8E9']}
         style={styles.eventGradient}
       >
         {/* Event Header */}
@@ -221,10 +224,10 @@ export default function EventsScreen() {
         {event.countdown && event.status === 'upcoming' && (
           <View style={styles.countdownContainer}>
             <LinearGradient
-              colors={['#F3F4F6', '#E5E7EB']}
+              colors={['#E8F5E8', '#F1F8E9']}
               style={styles.countdownBg}
             >
-              <Clock size={16} color="#3B82F6" />
+              <Clock size={16} color="#4CAF50" />
               <Text style={styles.countdownText}>Starts in: {formatCountdown(event.countdown)}</Text>
             </LinearGradient>
           </View>
@@ -234,7 +237,7 @@ export default function EventsScreen() {
         {event.status === 'live' && (
           <TouchableOpacity style={styles.joinLiveContainer}>
             <LinearGradient
-              colors={['#EF4444', '#DC2626']}
+              colors={['#4CAF50', '#2E7D32']}
               style={styles.joinLiveButton}
             >
               <PlayCircle size={20} color="#FFFFFF" />
@@ -250,16 +253,22 @@ export default function EventsScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <LinearGradient
-        colors={['#FFFFFF', '#F8FAFC']}
+        colors={['#FFFFFF', '#F1F8E9']}
         style={styles.header}
       >
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.headerTitle}>Events</Text>
-            <Text style={styles.headerSubtitle}>Weekly farming events & workshops</Text>
+          <View style={styles.headerLeft}>
+            <View style={styles.logoContainer}>
+              <Wheat size={24} color="#4CAF50" />
+              <Sparkles size={16} color="#FF9800" style={styles.sparkleIcon} />
+            </View>
+            <View>
+              <Text style={styles.headerTitle}>KrushiAI Events</Text>
+              <Text style={styles.headerSubtitle}>Weekly farming events & workshops</Text>
+            </View>
           </View>
           <View style={styles.headerIcon}>
-            <Calendar size={24} color="#3B82F6" />
+            <Calendar size={24} color="#4CAF50" />
           </View>
         </View>
       </LinearGradient>
@@ -268,21 +277,21 @@ export default function EventsScreen() {
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
           <View style={styles.statIcon}>
-            <TrendingUp size={18} color="#22C55E" />
+            <TrendingUp size={18} color="#4CAF50" />
           </View>
           <Text style={styles.statNumber}>12</Text>
           <Text style={styles.statLabel}>This Week</Text>
         </View>
         <View style={styles.statCard}>
           <View style={styles.statIcon}>
-            <Users size={18} color="#3B82F6" />
+            <Users size={18} color="#4CAF50" />
           </View>
           <Text style={styles.statNumber}>1.2k</Text>
           <Text style={styles.statLabel}>Participants</Text>
         </View>
         <View style={styles.statCard}>
           <View style={styles.statIcon}>
-            <Award size={18} color="#F59E0B" />
+            <Award size={18} color="#FF9800" />
           </View>
           <Text style={styles.statNumber}>8</Text>
           <Text style={styles.statLabel}>Completed</Text>
@@ -301,34 +310,55 @@ export default function EventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F8E9',
   },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#E8F5E8',
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoContainer: {
+    position: 'relative',
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sparkleIcon: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#1F2937',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   headerSubtitle: {
     fontSize: 14,
     color: '#6B7280',
     marginTop: 2,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   headerIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -344,17 +374,19 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
   },
   statIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
@@ -379,15 +411,18 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 16,
     marginTop: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   eventCard: {
     marginBottom: 16,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
   },
   eventGradient: {
     padding: 20,
@@ -435,12 +470,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   eventDescription: {
     fontSize: 14,
     color: '#6B7280',
     lineHeight: 20,
     marginBottom: 16,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   eventDetails: {
     gap: 8,
@@ -470,7 +507,8 @@ const styles = StyleSheet.create({
   countdownText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: '#4CAF50',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   joinLiveContainer: {
     marginTop: 8,

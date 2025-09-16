@@ -1,219 +1,51 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Animated,
-  Pressable,
-  KeyboardTypeOptions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Phone, Lock, User } from 'lucide-react-native';
-
-interface CustomInputProps {
-  icon: React.ReactNode;
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  keyboardType?: KeyboardTypeOptions;
-  maxLength?: number;
-  error?: string;
-}
-
-interface CustomButtonProps {
-  title: string;
-  onPress: () => void;
-  disabled?: boolean;
-  style?: any;
-  textStyle?: any;
-}
-
-// Professional Input Component
-const CustomInput: React.FC<CustomInputProps> = ({ 
-  icon, 
-  placeholder, 
-  value, 
-  onChangeText, 
-  keyboardType = 'default', 
-  maxLength, 
-  error 
-}) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const focusedAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(focusedAnim, {
-      toValue: isFocused ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [isFocused]);
-
-  const borderColor = focusedAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['#E0E0E0', '#2E7D32'],
-  });
-
-  const shadowOpacity = focusedAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.1, 0.3],
-  });
-
-  return (
-    <View style={styles.inputWrapper}>
-      <Animated.View 
-        style={[
-          styles.inputContainer, 
-          { 
-            borderColor,
-            shadowOpacity,
-          }
-        ]}
-      >
-        <View style={styles.iconContainer}>
-          {icon}
-        </View>
-        <TextInput
-          style={styles.input}
-          placeholder={placeholder}
-          placeholderTextColor="#999"
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          maxLength={maxLength}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-        />
-      </Animated.View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
-    </View>
-  );
-};
-
-// Professional Button Component
-const CustomButton: React.FC<CustomButtonProps> = ({ title, onPress, disabled, style, textStyle }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      disabled={disabled}
-    >
-      <Animated.View 
-        style={[
-          styles.button, 
-          style,
-          disabled && styles.buttonDisabled,
-          { transform: [{ scale: scaleAnim }] }
-        ]}
-      >
-        <Text style={[styles.buttonText, textStyle]}>{title}</Text>
-      </Animated.View>
-    </Pressable>
-  );
-};
+import { Wheat } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
-  const [showOtp, setShowOtp] = useState(false);
+  const [showOtpField, setShowOtpField] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
-  const [errors, setErrors] = useState<{phone?: string; otp?: string}>({});
-  
-  // Animation refs
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-
-  useEffect(() => {
-    // Fade in animation on component mount
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
-  const validatePhoneNumber = (phone: string) => {
-    if (!phone) return 'Phone number is required';
-    if (!/^\d{10}$/.test(phone)) return 'Please enter a valid 10-digit phone number';
-    return null;
-  };
-
-  const validateOtp = (otpValue: string) => {
-    if (!otpValue) return 'OTP is required';
-    if (!/^\d{6}$/.test(otpValue)) return 'Please enter a valid 6-digit OTP';
-    return null;
-  };
 
   const handleSendOtp = async () => {
-    const phoneError = validatePhoneNumber(phoneNumber);
-    if (phoneError) {
-      setErrors({ phone: phoneError });
+    if (!phoneNumber || phoneNumber.length !== 10) {
       return;
     }
 
-    setErrors({});
     setOtpLoading(true);
     
     // Simulate OTP sending
     setTimeout(() => {
-      setShowOtp(true);
+      setShowOtpField(true);
       setOtpLoading(false);
-      Alert.alert('Success', 'OTP sent successfully to your phone number');
     }, 1500);
   };
 
   const handleLogin = async () => {
-    const phoneError = validatePhoneNumber(phoneNumber);
-    const otpError = validateOtp(otp);
-    
-    if (phoneError || otpError) {
-      setErrors({
-        phone: phoneError,
-        otp: otpError,
-      });
+    if (!phoneNumber || !otp) {
       return;
     }
 
-    setErrors({});
     setLoading(true);
     
     // Simulate login process
     setTimeout(() => {
       setLoading(false);
       router.replace('/(tabs)');
-    }, 2000);
+    }, 1500);
   };
 
   const handleSignUp = () => {
@@ -227,90 +59,106 @@ export default function LoginScreen() {
         style={styles.container}
       >
         <LinearGradient
-          colors={['#E8F5E8', '#F1F8E9', '#FFFFFF']}
-          style={styles.gradient}
+          colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
+          style={styles.backgroundGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0.3 }}
         >
-          <Animated.View 
-            style={[
-              styles.content,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            {/* Header Section */}
-            <View style={styles.headerSection}>
+          <View style={styles.content}>
+            {/* Top Section - Logo and App Name */}
+            <View style={styles.topSection}>
               <View style={styles.logoContainer}>
-                <User size={48} color="#2E7D32" />
+                <View style={styles.logoWrapper}>
+                  <Wheat size={40} color="#4CAF50" />
+                </View>
+                <Text style={styles.appName}>KrushiAI</Text>
               </View>
-              <Text style={styles.welcomeTitle}>Welcome Back</Text>
-              <Text style={styles.subtitle}>Login to continue your KrushiMitra journey</Text>
+              
+              {/* Welcome Section */}
+              <View style={styles.welcomeSection}>
+                <Text style={styles.welcomeTitle}>Welcome</Text>
+                <Text style={styles.welcomeSubtitle}>Log into your account</Text>
+              </View>
             </View>
             
-            {/* Login Form Card */}
-            <View style={styles.formCard}>
-              <View style={styles.formContent}>
-                {/* Phone Number Input */}
-                <View style={styles.phoneRow}>
+            {/* Middle Section - Form */}
+            <View style={styles.formSection}>
+              {/* Phone Number Input with Send OTP Button */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>PHONE NUMBER</Text>
+                <View style={styles.phoneInputRow}>
                   <View style={styles.phoneInputContainer}>
-                    <CustomInput
-                      icon={<Phone size={20} color="#666" />}
-                      placeholder="Enter Mobile Number"
+                    <TextInput
+                      style={styles.input}
                       value={phoneNumber}
                       onChangeText={setPhoneNumber}
+                      placeholder="Enter Mobile Number"
+                      placeholderTextColor="#999"
                       keyboardType="phone-pad"
                       maxLength={10}
-                      error={errors.phone}
                     />
                   </View>
-                  <CustomButton
-                    title={otpLoading ? 'Sending...' : 'Send OTP'}
+                  <TouchableOpacity 
+                    style={[
+                      styles.otpButton,
+                      (otpLoading || !phoneNumber || phoneNumber.length !== 10) && styles.otpButtonDisabled
+                    ]}
                     onPress={handleSendOtp}
-                    disabled={otpLoading || !phoneNumber}
-                    style={styles.otpButton}
-                    textStyle={styles.otpButtonText}
-                  />
-                </View>
-                
-                {/* OTP Input */}
-                {showOtp && (
-                  <Animated.View
-                    style={{
-                      opacity: fadeAnim,
-                      transform: [{ translateY: slideAnim }],
-                    }}
+                    disabled={otpLoading || !phoneNumber || phoneNumber.length !== 10}
+                    activeOpacity={0.8}
                   >
-                    <CustomInput
-                      icon={<Lock size={20} color="#666" />}
-                      placeholder="Enter OTP"
+                    <Text style={styles.otpButtonText}>
+                      {otpLoading ? 'Sending...' : 'Send OTP'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              {/* OTP Input */}
+              {showOtpField && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>OTP</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
                       value={otp}
                       onChangeText={setOtp}
+                      placeholder="Enter OTP"
+                      placeholderTextColor="#999"
                       keyboardType="numeric"
                       maxLength={6}
-                      error={errors.otp}
+                      autoComplete="sms-otp"
+                      textContentType="oneTimeCode"
                     />
-                  </Animated.View>
-                )}
-                
-                {/* Login Button */}
-                <CustomButton
-                  title={loading ? 'Logging in...' : 'Login'}
-                  onPress={handleLogin}
-                  disabled={loading || !phoneNumber || !showOtp || !otp}
-                  style={styles.loginButton}
-                  textStyle={styles.loginButtonText}
-                />
-              </View>
+                  </View>
+                </View>
+              )}
             </View>
             
-            {/* Sign Up Link */}
-            <TouchableOpacity onPress={handleSignUp} style={styles.signUpContainer}>
-              <Text style={styles.signUpText}>
-                Don't have an account? <Text style={styles.signUpLink}>Sign Up</Text>
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
+            {/* Bottom Section - Login Button */}
+            <View style={styles.bottomSection}>
+              <TouchableOpacity 
+                style={[
+                  styles.loginButton,
+                  (loading || !phoneNumber || !showOtpField || !otp) && styles.loginButtonDisabled
+                ]}
+                onPress={handleLogin}
+                disabled={loading || !phoneNumber || !showOtpField || !otp}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.loginButtonText}>
+                  {loading ? 'LOGGING IN...' : 'LOG IN'}
+                </Text>
+              </TouchableOpacity>
+              
+              {/* Sign Up Link */}
+              <TouchableOpacity onPress={handleSignUp} style={styles.signUpContainer}>
+                <Text style={styles.signUpText}>
+                  Don't have an account? <Text style={styles.signUpLink}>Sign Up</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </LinearGradient>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -320,149 +168,165 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  gradient: {
+  backgroundGradient: {
     flex: 1,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
     paddingVertical: 40,
   },
-  headerSection: {
+  
+  // Top Section
+  topSection: {
+    alignItems: 'center',
+    marginBottom: 60,
+  },
+  logoContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 40,
   },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  logoWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  welcomeTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1B5E20',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  formCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  formContent: {
-    gap: 20,
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  phoneRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  phoneInputContainer: {
-    flex: 1,
-  },
-  inputWrapper: {
-    marginBottom: 4,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    borderWidth: 2,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  iconContainer: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    paddingVertical: 4,
-  },
-  errorText: {
-    color: '#e53e3e',
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  button: {
-    backgroundColor: '#2E7D32',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    marginRight: 16,
+    shadowColor: '#4CAF50',
     shadowOffset: {
       width: 0,
       height: 4,
     },
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 6,
   },
-  buttonDisabled: {
+  appName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  welcomeSection: {
+    alignItems: 'center',
+  },
+  welcomeTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: '#757575',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  
+  // Middle Section - Form
+  formSection: {
+    marginBottom: 40,
+    gap: 24,
+  },
+  inputGroup: {
+    width: '100%',
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#757575',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  phoneInputRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-end',
+  },
+  phoneInputContainer: {
+    flex: 1,
+  },
+  inputContainer: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  input: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#333333',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  otpButton: {
+    backgroundColor: '#2E7D32',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 100,
+    shadowColor: '#2E7D32',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  otpButtonDisabled: {
     backgroundColor: '#A5D6A7',
     shadowOpacity: 0.1,
   },
-  buttonText: {
+  otpButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  
+  // Bottom Section
+  bottomSection: {
+    alignItems: 'center',
+  },
+  loginButton: {
+    width: '100%',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 18,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#A5D6A7',
+    shadowOpacity: 0.1,
+  },
+  loginButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  otpButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minWidth: 100,
-  },
-  otpButtonText: {
-    fontSize: 14,
-  },
-  loginButton: {
-    marginTop: 8,
-  },
-  loginButtonText: {
-    fontSize: 18,
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   signUpContainer: {
     alignItems: 'center',
@@ -470,10 +334,11 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     fontSize: 16,
-    color: '#666',
+    color: '#757575',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   signUpLink: {
-    color: '#2E7D32',
+    color: '#4CAF50',
     fontWeight: '600',
   },
 });

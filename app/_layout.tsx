@@ -29,6 +29,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth/otp" />
         <Stack.Screen name="ai-chat" />
         <Stack.Screen name="crop-disease" />
+        <Stack.Screen name="activity-tracking" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" />
       </Stack>

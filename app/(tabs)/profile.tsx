@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, TextInput, Modal, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,7 +19,9 @@ import {
   Edit3,
   Smartphone,
   Mountain,
-  Layers
+  Layers,
+  Wheat,
+  Sparkles
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -118,8 +120,8 @@ export default function ProfileScreen() {
       title: 'Language Settings',
       subtitle: selectedLanguage,
       icon: Globe,
-      color: '#3B82F6',
-      bgColor: '#EFF6FF',
+      color: '#4CAF50',
+      bgColor: '#E8F5E8',
       onPress: () => router.push('/language'),
     },
     {
@@ -127,8 +129,8 @@ export default function ProfileScreen() {
       title: 'Notifications',
       subtitle: 'Manage alerts and reminders',
       icon: Bell,
-      color: '#F59E0B',
-      bgColor: '#FFFBEB',
+      color: '#FF9800',
+      bgColor: '#FFF3E0',
       onPress: () => {},
     },
     {
@@ -136,8 +138,8 @@ export default function ProfileScreen() {
       title: 'Privacy & Security',
       subtitle: 'Data protection settings',
       icon: Shield,
-      color: '#10B981',
-      bgColor: '#ECFDF5',
+      color: '#4CAF50',
+      bgColor: '#E8F5E8',
       onPress: () => {},
     },
     {
@@ -145,8 +147,8 @@ export default function ProfileScreen() {
       title: 'General Settings',
       subtitle: 'App preferences',
       icon: Settings,
-      color: '#6366F1',
-      bgColor: '#EEF2FF',
+      color: '#4CAF50',
+      bgColor: '#E8F5E8',
       onPress: () => {},
     },
   ];
@@ -156,16 +158,25 @@ export default function ProfileScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header with gradient background */}
         <LinearGradient
-          colors={['#22C55E', '#16A34A', '#15803D']}
+          colors={['#4CAF50', '#2E7D32']}
           style={styles.header}
         >
+          {/* Agriculture branding */}
+          <View style={styles.brandingContainer}>
+            <View style={styles.logoContainer}>
+              <Wheat size={24} color="#FFFFFF" />
+              <Sparkles size={16} color="#FF9800" style={styles.sparkleIcon} />
+            </View>
+            <Text style={styles.appName}>KrushiAI Profile</Text>
+          </View>
+          
           <View style={styles.profileSection}>
             <View style={styles.profilePicture}>
               <LinearGradient
                 colors={['#FFFFFF', '#F8FAFC']}
                 style={styles.profileGradient}
               >
-                <User size={32} color="#22C55E" />
+                <User size={32} color="#4CAF50" />
               </LinearGradient>
             </View>
             <Text style={styles.userName}>{userData?.name || 'Farmer'}</Text>
@@ -213,7 +224,7 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <LinearGradient
-              colors={['#3B82F6', '#2563EB']}
+              colors={['#4CAF50', '#2E7D32']}
               style={styles.statGradient}
             >
               <BarChart3 size={24} color="#FFFFFF" />
@@ -223,7 +234,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statCard}>
             <LinearGradient
-              colors={['#10B981', '#059669']}
+              colors={['#4CAF50', '#2E7D32']}
               style={styles.statGradient}
             >
               <Award size={24} color="#FFFFFF" />
@@ -233,7 +244,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statCard}>
             <LinearGradient
-              colors={['#F59E0B', '#D97706']}
+              colors={['#FF9800', '#F57C00']}
               style={styles.statGradient}
             >
               <User size={24} color="#FFFFFF" />
@@ -270,8 +281,8 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Support & Help</Text>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <View style={[styles.menuItemIcon, { backgroundColor: '#FEF2F2' }]}>
-                <Phone size={20} color="#EF4444" />
+              <View style={[styles.menuItemIcon, { backgroundColor: '#FFF3E0' }]}>
+                <Phone size={20} color="#FF9800" />
               </View>
               <View style={styles.menuItemText}>
                 <Text style={styles.menuItemTitle}>Kisan Call Center</Text>
@@ -283,8 +294,8 @@ export default function ProfileScreen() {
           
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <View style={[styles.menuItemIcon, { backgroundColor: '#EFF6FF' }]}>
-                <HelpCircle size={20} color="#3B82F6" />
+              <View style={[styles.menuItemIcon, { backgroundColor: '#E8F5E8' }]}>
+                <HelpCircle size={20} color="#4CAF50" />
               </View>
               <View style={styles.menuItemText}>
                 <Text style={styles.menuItemTitle}>Help & FAQ</Text>
@@ -309,10 +320,106 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.versionText}>Agrimater v1.0.0</Text>
+          <Text style={styles.versionText}>KrushiAI v1.0.0</Text>
           <Text style={styles.copyrightText}>© 2024 Smart India Hackathon</Text>
         </View>
       </ScrollView>
+      
+      {/* Edit Profile Modal */}
+      <Modal visible={showEditModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <LinearGradient
+              colors={['#FFFFFF', '#F1F8E9']}
+              style={styles.modalContent}
+            >
+              <View style={styles.modalHeader}>
+                <View style={styles.modalTitleContainer}>
+                  <Wheat size={20} color="#4CAF50" />
+                  <Text style={styles.modalTitle}>Edit Profile</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => setShowEditModal(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Text style={styles.modalCloseText}>×</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.modalFields}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Full Name</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={editData.name}
+                    onChangeText={(text) => setEditData({...editData, name: text})}
+                    placeholder="Enter your full name"
+                  />
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Phone Number</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={editData.phoneNumber}
+                    onChangeText={(text) => setEditData({...editData, phoneNumber: text})}
+                    placeholder="Enter phone number"
+                    keyboardType="numeric"
+                  />
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Land Size</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={editData.landSize}
+                    onChangeText={(text) => setEditData({...editData, landSize: text})}
+                    placeholder="e.g., 5.2 acres"
+                  />
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Soil Type</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={editData.soilType}
+                    onChangeText={(text) => setEditData({...editData, soilType: text})}
+                    placeholder="e.g., Black Cotton Soil"
+                  />
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Location</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={editData.location}
+                    onChangeText={(text) => setEditData({...editData, location: text})}
+                    placeholder="City, State"
+                  />
+                </View>
+              </ScrollView>
+              
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={styles.modalCancelButton} 
+                  onPress={() => setShowEditModal(false)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.modalSaveButton} onPress={saveProfile}>
+                  <LinearGradient
+                    colors={['#4CAF50', '#2E7D32']}
+                    style={styles.modalSaveGradient}
+                  >
+                    <Text style={styles.modalSaveText}>Save Changes</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -320,7 +427,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F8E9',
   },
   scrollView: {
     flex: 1,
@@ -329,6 +436,33 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 30,
     paddingHorizontal: 24,
+  },
+  brandingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    gap: 12,
+  },
+  logoContainer: {
+    position: 'relative',
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sparkleIcon: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+  },
+  appName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   profileSection: {
     alignItems: 'center',
@@ -359,6 +493,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   userBadge: {
     flexDirection: 'row',
@@ -429,6 +564,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 16,
     paddingLeft: 4,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   menuItem: {
     backgroundColor: '#FFFFFF',
@@ -438,11 +574,13 @@ const styles = StyleSheet.create({
     padding: 18,
     borderRadius: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
   },
   menuItemLeft: {
     flexDirection: 'row',
@@ -557,5 +695,110 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    maxHeight: '80%',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  modalContent: {
+    padding: 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  modalCloseButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    fontSize: 18,
+    color: '#6B7280',
+    fontWeight: 'bold',
+  },
+  modalFields: {
+    maxHeight: 300,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  modalInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  modalSaveButton: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  modalSaveGradient: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  modalSaveText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
 });
