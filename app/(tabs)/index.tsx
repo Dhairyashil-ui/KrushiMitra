@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Modal, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Modal, Animated, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,8 +20,11 @@ import {
   IndianRupee,
   Users,
   MapPin,
-  Thermometer
+  Thermometer,
+  Mic,
+  MicOff
 } from 'lucide-react-native';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default function HomeScreen() {
   const [userData, setUserData] = useState<any>(null);
@@ -34,9 +37,64 @@ export default function HomeScreen() {
   const [orbitalAnimation] = useState(new Animated.Value(0));
   const [weatherAnimation] = useState(new Animated.Value(0));
   const [pulseAnimation] = useState(new Animated.Value(1));
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<{role: string, parts: string}[]>([]);
+  
   const router = useRouter();
+  const recognitionRef = useRef<any>(null);
+  const genAIRef = useRef<any>(null);
+  const modelRef = useRef<any>(null);
 
+  // Initialize Gemini AI
   useEffect(() => {
+    try {
+      // Get API key from environment variable (in a real app, this should come from a secure backend service)
+      const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "AIzaSyB9D42GOeezcrEPQLMUvF4MmM3O6sJfmuw"; // Fallback for demo
+      genAIRef.current = new GoogleGenerativeAI(API_KEY);
+      modelRef.current = genAIRef.current.getGenerativeModel({ model: "gemini-2.5-flash" });
+    } catch (error) {
+      console.error("Error initializing Gemini AI:", error);
+    }
+  }, []);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    // Check if platform supports speech recognition (Web Speech API)
+    const isWeb = Platform.OS === 'web';
+    
+    if (isWeb) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-US';
+        
+        recognitionRef.current.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setIsListening(false);
+          handleVoiceInput(transcript);
+        };
+        
+        recognitionRef.current.onerror = (event: any) => {
+          console.error('Speech recognition error', event.error);
+          setIsListening(false);
+          Alert.alert('Speech Recognition Error', 'There was an error with speech recognition. Please try again.');
+        };
+        
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+        };
+      } else {
+        console.warn('Speech recognition not supported in this browser');
+      }
+    } else {
+      console.warn('Speech recognition only available on web platform');
+    }
+    
+    // Load user data and weather
     loadUserData();
     loadWeather();
     
@@ -126,6 +184,14 @@ export default function HomeScreen() {
     weatherLoop.start();
     pulseLoop.start();
     
+    // Start listening when component mounts
+    // Auto-start voice assistant when home page opens
+    setTimeout(() => {
+      if (Platform.OS === 'web') {
+        startListening();
+      }
+    }, 3000);
+    
     return () => {
       glowLoop.stop();
       rotateLoop.stop();
@@ -133,6 +199,10 @@ export default function HomeScreen() {
       scaleLoop.stop();
       weatherLoop.stop();
       pulseLoop.stop();
+      
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
     };
   }, []);
 
@@ -211,6 +281,115 @@ export default function HomeScreen() {
   const openNotifications = () => {
     // Open notifications
     console.log('Open Notifications');
+  };
+
+  const startListening = () => {
+    if (Platform.OS === 'web' && recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (error) {
+        console.error('Error starting speech recognition:', error);
+        Alert.alert('Error', 'Could not start voice recognition. Please ensure your browser supports it and you have given microphone permissions.');
+      }
+    } else {
+      Alert.alert('Platform Not Supported', 'Voice recognition is only available on web platform.');
+    }
+  };
+
+  const stopListening = () => {
+    if (Platform.OS === 'web' && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  const handleVoiceInput = async (text: string) => {
+    if (!text.trim()) return;
+    
+    try {
+      // Add user message to conversation history
+      const updatedHistory = [...conversationHistory, { role: "user", parts: text }];
+      setConversationHistory(updatedHistory);
+      
+      // Show that we're processing
+      setIsSpeaking(true);
+      
+      // Generate response using Gemini
+      if (modelRef.current) {
+        const prompt = `You are KrushiAI, an intelligent farming assistant. Provide helpful, concise responses to farming questions. 
+        User query: ${text}
+        
+        Respond in a friendly, helpful manner with farming-specific advice.`;
+        
+        const result = await modelRef.current.generateContent(prompt);
+        const response = await result.response;
+        const responseText = response.text();
+        
+        // Add AI response to conversation history
+        setConversationHistory([...updatedHistory, { role: "model", parts: responseText }]);
+        
+        // Speak the response
+        speakResponse(responseText);
+      } else {
+        const fallbackResponse = "I'm your KrushiAI farming assistant. I can help with crop care, weather updates, pest control, and farming advice. What would you like to know?";
+        speakResponse(fallbackResponse);
+        setConversationHistory([...updatedHistory, { role: "model", parts: fallbackResponse }]);
+      }
+    } catch (error) {
+      console.error('Error processing voice input:', error);
+      const errorMessage = "Sorry, I encountered an error processing your request. Please try again.";
+      speakResponse(errorMessage);
+    }
+  };
+
+  const speakResponse = (text: string) => {
+    if (Platform.OS === 'web' && 'speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = window.speechSynthesis.getVoices().find(voice => voice.lang.includes('en')) || null;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+      };
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        // Auto-start listening again after speaking
+        setTimeout(() => {
+          startListening();
+        }, 1000);
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event);
+        setIsSpeaking(false);
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.warn('Speech synthesis not supported or not on web platform');
+      setIsSpeaking(false);
+      // Auto-start listening again after speaking
+      setTimeout(() => {
+        if (Platform.OS === 'web') {
+          startListening();
+        }
+      }, 1000);
+    }
+  };
+
+  const toggleVoiceAssistant = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
   };
 
   return (
@@ -318,7 +497,7 @@ export default function HomeScreen() {
               >
                 <TouchableOpacity 
                   style={styles.circleContentMain}
-                  onPress={navigateToAIChat}
+                  onPress={toggleVoiceAssistant}
                   activeOpacity={0.7}
                 >
                   {/* AI Bot with Glow */}
@@ -353,7 +532,18 @@ export default function HomeScreen() {
                         outputRange: [0.7, 1],
                       })
                     }
-                  ]}>Neural Interface Active</Animated.Text>
+                  ]}>
+                    {isListening ? "Listening..." : isSpeaking ? "Speaking..." : "Neural Interface Active"}
+                  </Animated.Text>
+                  
+                  {/* Mic Icon for Voice Control */}
+                  <View style={styles.micIconContainer}>
+                    {isListening ? (
+                      <MicOff size={24} color="#FFFFFF" />
+                    ) : (
+                      <Mic size={24} color="#FFFFFF" />
+                    )}
+                  </View>
                   
                   {/* Data Streams */}
                   <View style={styles.dataStreams}>
@@ -2257,5 +2447,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#777',
     fontWeight: '500',
+  },
+  // Voice Assistant Styles
+  micIconContainer: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
 });
