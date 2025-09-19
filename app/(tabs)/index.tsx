@@ -40,11 +40,15 @@ export default function HomeScreen() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<{role: string, parts: string}[]>([]);
+  const [audioLevel] = useState(new Animated.Value(1)); // For audio visualization
   
   const router = useRouter();
   const recognitionRef = useRef<any>(null);
   const genAIRef = useRef<any>(null);
   const modelRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Initialize Gemini AI
   useEffect(() => {
@@ -70,7 +74,7 @@ export default function HomeScreen() {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = false;
-        recognitionRef.current.lang = 'en-US';
+        recognitionRef.current.lang = 'en-IN-NeerjaNeural';
         
         recognitionRef.current.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
@@ -202,6 +206,14 @@ export default function HomeScreen() {
       
       if (recognitionRef.current) {
         recognitionRef.current.stop();
+      }
+      
+      // Clean up speaking animation
+      stopSpeakingAnimation();
+      
+      // Clean up speaking animation resources
+      if ((audioLevel as any)._speakingAnimation) {
+        (audioLevel as any)._speakingAnimation.stop();
       }
     };
   }, []);
@@ -350,15 +362,19 @@ export default function HomeScreen() {
       
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.voice = window.speechSynthesis.getVoices().find(voice => voice.lang.includes('en')) || null;
-      utterance.rate = 1.0;
+      utterance.rate = 1.5; // Increased from 1.0 to 1.5 for faster speech
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
       
+      // Simulate audio waveform based on speech synthesis events
       utterance.onstart = () => {
         setIsSpeaking(true);
+        // Start a more dynamic animation when speaking begins
+        startSpeakingAnimation();
       };
       
       utterance.onend = () => {
+        stopSpeakingAnimation();
         setIsSpeaking(false);
         // Auto-start listening again after speaking
         setTimeout(() => {
@@ -367,8 +383,43 @@ export default function HomeScreen() {
       };
       
       utterance.onerror = (event) => {
+        stopSpeakingAnimation();
         console.error('Speech synthesis error:', event);
         setIsSpeaking(false);
+      };
+      
+      // Add boundary events for more granular control
+      utterance.onboundary = (event) => {
+        // Adjust animation based on speech boundaries
+        if (event.name === 'word') {
+          // Create a small pulse for each word
+          Animated.sequence([
+            Animated.timing(audioLevel, {
+              toValue: 1.1 + Math.random() * 0.2, // Random value between 1.1 and 1.3
+              duration: 80,
+              useNativeDriver: true,
+            }),
+            Animated.timing(audioLevel, {
+              toValue: 1.0 + Math.random() * 0.1, // Random value between 1.0 and 1.1
+              duration: 100,
+              useNativeDriver: true,
+            })
+          ]).start();
+        } else if (event.name === 'sentence') {
+          // Create a more pronounced pulse for each sentence
+          Animated.sequence([
+            Animated.timing(audioLevel, {
+              toValue: 1.2 + Math.random() * 0.3, // Random value between 1.2 and 1.5
+              duration: 150,
+              useNativeDriver: true,
+            }),
+            Animated.timing(audioLevel, {
+              toValue: 1.0,
+              duration: 200,
+              useNativeDriver: true,
+            })
+          ]).start();
+        }
       };
       
       window.speechSynthesis.speak(utterance);
@@ -382,6 +433,100 @@ export default function HomeScreen() {
         }
       }, 1000);
     }
+  };
+
+  const startSpeakingAnimation = () => {
+    // Create a more dynamic speaking animation
+    const speakingAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(audioLevel, {
+          toValue: 1.15,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(audioLevel, {
+          toValue: 1.05,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(audioLevel, {
+          toValue: 1.2,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(audioLevel, {
+          toValue: 1.0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    
+    speakingAnimation.start();
+    
+    // Store reference to stop later
+    (audioLevel as any)._speakingAnimation = speakingAnimation;
+  };
+
+  const stopSpeakingAnimation = () => {
+    // Stop the speaking animation
+    if ((audioLevel as any)._speakingAnimation) {
+      (audioLevel as any)._speakingAnimation.stop();
+    }
+    
+    // Reset to normal scale with a smooth transition
+    Animated.timing(audioLevel, {
+      toValue: 1,
+      duration: 500, // Slower reset for smoother transition
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const startAudioVisualization = () => {
+    if (!audioContextRef.current || !analyserRef.current) return;
+    
+    const updateAudioLevel = () => {
+      if (!analyserRef.current) return;
+      
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      analyserRef.current.getByteFrequencyData(dataArray);
+      
+      // Calculate average volume
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+      }
+      const average = sum / dataArray.length;
+      
+      // Normalize to 0-1 range (0-255 is the Uint8Array range)
+      const normalizedLevel = 1 + (average / 255) * 0.5; // Scale to 1.0 - 1.5 range
+      
+      // Update the animated value
+      Animated.timing(audioLevel, {
+        toValue: normalizedLevel,
+        duration: 50, // Smooth transitions
+        useNativeDriver: true,
+      }).start();
+      
+      // Continue the loop
+      animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+    };
+    
+    updateAudioLevel();
+  };
+
+  const stopAudioVisualization = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    // Reset to normal scale
+    Animated.timing(audioLevel, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   const toggleVoiceAssistant = () => {
@@ -447,163 +592,165 @@ export default function HomeScreen() {
           </Animated.View>
           
           {/* Main Circle with Enhanced Effects */}
-          <Animated.View style={[
-            styles.perfectMainCircle,
-            {
-              shadowOpacity: glowAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.3, 0.8],
-              }),
-              shadowRadius: glowAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [20, 40],
-              }),
-              transform: [
-                {
-                  scale: scaleAnimation
-                },
-                {
-                  rotate: rotateAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '360deg'],
-                  })
-                }
-              ]
-            }
-          ]}>
-            {/* Holographic Gradient */}
-            <LinearGradient
-              colors={[
-                'rgba(59, 130, 246, 0.9)',
-                'rgba(139, 92, 246, 0.8)', 
-                'rgba(16, 185, 129, 0.7)',
-                'rgba(236, 72, 153, 0.6)',
-                'rgba(59, 130, 246, 0.9)'
-              ]}
-              style={styles.holographicLayer}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              {/* Inner Glass Effect */}
+          <TouchableOpacity 
+            onPress={toggleVoiceAssistant}
+            activeOpacity={0.7}
+            style={styles.circleTouchContainer}
+          >
+            <Animated.View style={[
+              styles.perfectMainCircle,
+              {
+                shadowOpacity: glowAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 0.8],
+                }),
+                shadowRadius: glowAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 40],
+                }),
+                transform: [
+                  {
+                    scale: audioLevel
+                  },
+                  {
+                    rotate: rotateAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg'],
+                    })
+                  }
+                ]
+              }
+            ]}>
+              {/* Holographic Gradient */}
               <LinearGradient
                 colors={[
-                  'rgba(255, 255, 255, 0.2)',
-                  'rgba(255, 255, 255, 0.05)',
-                  'rgba(255, 255, 255, 0.1)'
+                  'rgba(59, 130, 246, 0.9)',
+                  'rgba(139, 92, 246, 0.8)', 
+                  'rgba(16, 185, 129, 0.7)',
+                  'rgba(236, 72, 153, 0.6)',
+                  'rgba(59, 130, 246, 0.9)'
                 ]}
-                style={styles.glassLayer}
+                style={styles.holographicLayer}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <TouchableOpacity 
-                  style={styles.circleContentMain}
-                  onPress={toggleVoiceAssistant}
-                  activeOpacity={0.7}
+                {/* Inner Glass Effect */}
+                <LinearGradient
+                  colors={[
+                    'rgba(255, 255, 255, 0.2)',
+                    'rgba(255, 255, 255, 0.05)',
+                    'rgba(255, 255, 255, 0.1)'
+                  ]}
+                  style={styles.glassLayer}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                 >
-                  {/* AI Bot with Glow */}
-                  <Animated.View style={[
-                    styles.botContainer,
-                    {
-                      opacity: glowAnimation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.8, 1],
-                      })
-                    }
-                  ]}>
-                    <Bot size={90} color="#FFFFFF" />
-                  </Animated.View>
-                  
-                  {/* Futuristic Text */}
-                  <Animated.Text style={[
-                    styles.futuristicTitle,
-                    {
-                      opacity: glowAnimation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.9, 1],
-                      })
-                    }
-                  ]}>KrushiAi</Animated.Text>
-                  
-                  <Animated.Text style={[
-                    styles.futuristicSubtitle,
-                    {
-                      opacity: glowAnimation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.7, 1],
-                      })
-                    }
-                  ]}>
-                    {isListening ? "Listening..." : isSpeaking ? "Speaking..." : "Neural Interface Active"}
-                  </Animated.Text>
-                  
-                  {/* Mic Icon for Voice Control */}
-                  <View style={styles.micIconContainer}>
-                    {isListening ? (
-                      <MicOff size={24} color="#FFFFFF" />
-                    ) : (
-                      <Mic size={24} color="#FFFFFF" />
-                    )}
-                  </View>
-                  
-                  {/* Data Streams */}
-                  <View style={styles.dataStreams}>
+                  <View style={styles.circleContentMain}>
+                    {/* AI Bot with Glow */}
                     <Animated.View style={[
-                      styles.dataLine,
+                      styles.botContainer,
                       {
                         opacity: glowAnimation.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [0.3, 0.8],
+                          outputRange: [0.8, 1],
                         })
                       }
-                    ]} />
-                    <Animated.View style={[
-                      styles.dataLine,
-                      styles.dataLine2,
+                    ]}>
+                      <Bot size={90} color="#FFFFFF" />
+                    </Animated.View>
+                    
+                    {/* Futuristic Text */}
+                    <Animated.Text style={[
+                      styles.futuristicTitle,
                       {
                         opacity: glowAnimation.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [0.2, 0.6],
+                          outputRange: [0.9, 1],
                         })
                       }
-                    ]} />
+                    ]}>KrushiAi</Animated.Text>
+                    
+                    <Animated.Text style={[
+                      styles.futuristicSubtitle,
+                      {
+                        opacity: glowAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.7, 1],
+                        })
+                      }
+                    ]}>
+                      {isListening ? "Listening..." : isSpeaking ? "Speaking..." : "Neural Interface Active"}
+                    </Animated.Text>
+                    
+                    {/* Mic Icon for Voice Control */}
+                    <View style={styles.micIconContainer}>
+                      {isListening ? (
+                        <MicOff size={24} color="#FFFFFF" />
+                      ) : (
+                        <Mic size={24} color="#FFFFFF" />
+                      )}
+                    </View>
+                    
+                    {/* Data Streams */}
+                    <View style={styles.dataStreams}>
+                      <Animated.View style={[
+                        styles.dataLine,
+                        {
+                          opacity: glowAnimation.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.3, 0.8],
+                          })
+                        }
+                      ]} />
+                      <Animated.View style={[
+                        styles.dataLine,
+                        styles.dataLine2,
+                        {
+                          opacity: glowAnimation.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.2, 0.6],
+                          })
+                        }
+                      ]} />
+                    </View>
                   </View>
-                </TouchableOpacity>
+                </LinearGradient>
               </LinearGradient>
-            </LinearGradient>
-            
-            {/* Multiple Pulse Rings */}
-            <Animated.View style={[
-              styles.pulseRingMain,
-              {
-                opacity: glowAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.4, 0.8],
-                }),
-                transform: [{
-                  scale: glowAnimation.interpolate({
+              
+              {/* Multiple Pulse Rings */}
+              <Animated.View style={[
+                styles.pulseRingMain,
+                {
+                  opacity: glowAnimation.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [1, 1.15],
-                  })
-                }]
-              }
-            ]} />
-            
-            <Animated.View style={[
-              styles.pulseRingSecondary,
-              {
-                opacity: glowAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.2, 0.5],
-                }),
-                transform: [{
-                  scale: glowAnimation.interpolate({
+                    outputRange: [0.4, 0.8],
+                  }),
+                  transform: [{
+                    scale: glowAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.15],
+                    })
+                  }]
+                }
+              ]} />
+              
+              <Animated.View style={[
+                styles.pulseRingSecondary,
+                {
+                  opacity: glowAnimation.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [1.1, 1.3],
-                  })
-                }]
-              }
-            ]} />
-          </Animated.View>
+                    outputRange: [0.2, 0.5],
+                  }),
+                  transform: [{
+                    scale: glowAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1.1, 1.3],
+                    })
+                  }]
+                }
+              ]} />
+            </Animated.View>
+          </TouchableOpacity>
           
           {/* Energy Particles */}
           <Animated.View style={[
@@ -1932,6 +2079,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     position: 'relative',
+  },
+  circleTouchContainer: {
+    width: 150,
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   circleTitle: {
     fontSize: 16,
