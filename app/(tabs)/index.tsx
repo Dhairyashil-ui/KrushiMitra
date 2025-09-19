@@ -2617,5 +2617,3 @@ const styles = StyleSheet.create({
   },
 });
 
-
-
