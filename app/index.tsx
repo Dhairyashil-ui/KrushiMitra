@@ -1,12 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, ActivityIndicator, Animated } from 'react-native';
+import PageTransition from '@/components/PageTransition';
+import { replaceWithTransition } from '@/src/utils/navigation';
 
 export default function IndexScreen() {
-  const router = useRouter();
   const [isReady, setIsReady] = useState(false);
+  const fadeAnimation = useRef(new Animated.Value(0)).current;
+  const [transitioning, setTransitioning] = useState(false);
 
   useEffect(() => {
+    // Fade in animation for loading indicator
+    Animated.timing(fadeAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
     // Wait for the navigation system to be ready
     const timer = setTimeout(() => {
       setIsReady(true);
@@ -17,15 +26,25 @@ export default function IndexScreen() {
 
   useEffect(() => {
     if (isReady) {
-      // Navigate to splash screen once ready
-      router.replace('/splash');
+      // Trigger transition before navigation
+      setTransitioning(true);
     }
-  }, [isReady, router]);
+  }, [isReady]);
+
+  useEffect(() => {
+    if (transitioning) {
+      replaceWithTransition('/splash');
+    }
+  }, [transitioning]);
 
   // Show loading indicator while waiting
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <ActivityIndicator size="large" />
-    </View>
+    <PageTransition isActive={!transitioning} type="fade">
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Animated.View style={{ opacity: fadeAnimation }}>
+          <ActivityIndicator size="large" />
+        </Animated.View>
+      </View>
+    </PageTransition>
   );
 }

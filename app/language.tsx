@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   SafeAreaView,
   Platform,
   Image,
+  Animated,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Wheat, CheckCircle } from 'lucide-react-native';
+import PageTransition from '@/components/PageTransition';
+import { replaceWithTransition } from '@/src/utils/navigation';
 
 const languages = [
   { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം' },
@@ -22,7 +24,23 @@ const languages = [
 
 export default function LanguageScreen() {
   const [selectedLanguage, setSelectedLanguage] = useState('');
-  const router = useRouter();
+  const fadeAnimation = useRef(new Animated.Value(0)).current;
+  const [transitioning, setTransitioning] = useState(false);
+
+  useEffect(() => {
+    // Fade in animation when screen loads
+    Animated.timing(fadeAnimation, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  useEffect(() => {
+    if (transitioning) {
+      replaceWithTransition('/auth/login');
+    }
+  }, [transitioning]);
 
   const handleLanguageSelect = (languageCode: string) => {
     setSelectedLanguage(languageCode);
@@ -33,95 +51,99 @@ export default function LanguageScreen() {
     
     try {
       await AsyncStorage.setItem('selectedLanguage', selectedLanguage);
-      router.replace('/auth/login');
+      
+      // Trigger transition before navigation
+      setTransitioning(true);
     } catch (error) {
       console.error('Error saving language preference:', error);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
-        style={styles.backgroundGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0.3 }}
-      >
-        {/* Top Section - Logo */}
-        <View style={styles.topSection}>
-          <View style={styles.logoContainer}>
-            <View style={styles.logoWrapper}>
-              <Image 
-                source={require('./logoai.jpg')} 
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
+    <PageTransition isActive={!transitioning} type="slide">
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+          colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
+          style={styles.backgroundGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0.3 }}
+        >
+          {/* Top Section - Logo */}
+          <View style={styles.topSection}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoWrapper}>
+                <Image 
+                  source={require('./logoai.jpg')} 
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
           </View>
-        </View>
-        
-        {/* Heading Section */}
-        <View style={styles.headingSection}>
-          <Text style={styles.mainHeading}>Choose Your Language</Text>
-          <Text style={styles.subHeading}>Select your preferred language to talk with the AI assistant</Text>
-        </View>
-        
-        {/* Language Options Section */}
-        <ScrollView style={styles.languageScrollContainer} showsVerticalScrollIndicator={false}>
-          <View style={styles.languagesContainer}>
-            {languages.map((language) => (
-              <TouchableOpacity
-                key={language.code}
-                style={[
-                  styles.languageButton,
-                  selectedLanguage === language.code && styles.selectedLanguageButton,
-                ]}
-                onPress={() => handleLanguageSelect(language.code)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.languageContent}>
-                  <View style={styles.languageTextContainer}>
-                    <Text style={[
-                      styles.languageName,
-                      selectedLanguage === language.code && styles.selectedLanguageName,
-                    ]}>
-                      {language.name}
-                    </Text>
-                    <Text style={[
-                      styles.nativeLanguageName,
-                      selectedLanguage === language.code && styles.selectedNativeLanguageName,
-                    ]}>
-                      {language.nativeName}
-                    </Text>
-                  </View>
-                  
-                  {selectedLanguage === language.code && (
-                    <View style={styles.checkIconContainer}>
-                      <CheckCircle size={24} color="#4CAF50" />
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
+          
+          {/* Heading Section */}
+          <View style={styles.headingSection}>
+            <Text style={styles.mainHeading}>Choose Your Language</Text>
+            <Text style={styles.subHeading}>Select your preferred language to talk with the AI assistant</Text>
           </View>
-        </ScrollView>
-        
-        {/* Bottom Section - Continue Button */}
-        <View style={styles.bottomSection}>
-          <TouchableOpacity 
-            style={[
-              styles.continueButton,
-              !selectedLanguage && styles.continueButtonDisabled
-            ]}
-            onPress={handleContinue}
-            disabled={!selectedLanguage}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.continueButtonText}>Continue</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-    </SafeAreaView>
+          
+          {/* Language Options Section */}
+          <ScrollView style={styles.languageScrollContainer} showsVerticalScrollIndicator={false}>
+            <View style={styles.languagesContainer}>
+              {languages.map((language) => (
+                <TouchableOpacity
+                  key={language.code}
+                  style={[
+                    styles.languageButton,
+                    selectedLanguage === language.code && styles.selectedLanguageButton,
+                  ]}
+                  onPress={() => handleLanguageSelect(language.code)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.languageContent}>
+                    <View style={styles.languageTextContainer}>
+                      <Text style={[
+                        styles.languageName,
+                        selectedLanguage === language.code && styles.selectedLanguageName,
+                      ]}>
+                        {language.name}
+                      </Text>
+                      <Text style={[
+                        styles.nativeLanguageName,
+                        selectedLanguage === language.code && styles.selectedNativeLanguageName,
+                      ]}>
+                        {language.nativeName}
+                      </Text>
+                    </View>
+                    
+                    {selectedLanguage === language.code && (
+                      <View style={styles.checkIconContainer}>
+                        <CheckCircle size={24} color="#4CAF50" />
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+          
+          {/* Bottom Section - Continue Button */}
+          <View style={styles.bottomSection}>
+            <TouchableOpacity 
+              style={[
+                styles.continueButton,
+                !selectedLanguage && styles.continueButtonDisabled
+              ]}
+              onPress={handleContinue}
+              disabled={!selectedLanguage}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
+    </PageTransition>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import PageTransition from '@/components/PageTransition';
+import { replaceWithTransition } from '@/src/utils/navigation';
 
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -19,6 +21,23 @@ export default function LoginScreen() {
   const [showOtpField, setShowOtpField] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  const fadeAnimation = useRef(new Animated.Value(0)).current;
+  const [transitioning, setTransitioning] = useState(false);
+
+  useEffect(() => {
+    // Fade in animation when screen loads
+    Animated.timing(fadeAnimation, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  useEffect(() => {
+    if (transitioning) {
+      replaceWithTransition('/(tabs)');
+    }
+  }, [transitioning]);
 
   const handleSendOtp = async () => {
     if (!phoneNumber || phoneNumber.length !== 10) {
@@ -44,127 +63,132 @@ export default function LoginScreen() {
     // Simulate login process
     setTimeout(() => {
       setLoading(false);
-      router.replace('/(tabs)');
+      
+      // Trigger transition before navigation
+      setTransitioning(true);
     }, 1500);
   };
 
   const handleSignUp = () => {
-    router.push('/auth/signup');
+    // For sign up, we can use the utility function as well
+    replaceWithTransition('/auth/signup');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
-        <LinearGradient
-          colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
-          style={styles.backgroundGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0.3 }}
+    <PageTransition isActive={!transitioning} type="slideFromRight">
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.container}
         >
-          <View style={styles.content}>
-            {/* Top Section - Logo */}
-            <View style={styles.topSection}>
-              <View style={styles.logoContainer}>
-                <View style={styles.logoWrapper}>
-                  <Image 
-                    source={require('../logoai.jpg')} 
-                    style={styles.logoImage}
-                    resizeMode="contain"
-                  />
-                </View>
-              </View>
-              
-              {/* Welcome Section */}
-              <View style={styles.welcomeSection}>
-                <Text style={styles.welcomeTitle}>Welcome</Text>
-                <Text style={styles.welcomeSubtitle}>Log into your account</Text>
-              </View>
-            </View>
-            
-            {/* Middle Section - Form */}
-            <View style={styles.formSection}>
-              {/* Phone Number Input with Send OTP Button */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>PHONE NUMBER</Text>
-                <View style={styles.phoneInputRow}>
-                  <View style={styles.phoneInputContainer}>
-                    <TextInput
-                      style={styles.input}
-                      value={phoneNumber}
-                      onChangeText={setPhoneNumber}
-                      placeholder="Enter Mobile Number"
-                      placeholderTextColor="#999"
-                      keyboardType="phone-pad"
-                      maxLength={10}
+          <LinearGradient
+            colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
+            style={styles.backgroundGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0.3 }}
+          >
+            <View style={styles.content}>
+              {/* Top Section - Logo */}
+              <View style={styles.topSection}>
+                <View style={styles.logoContainer}>
+                  <View style={styles.logoWrapper}>
+                    <Image 
+                      source={require('../logoai.jpg')} 
+                      style={styles.logoImage}
+                      resizeMode="contain"
                     />
                   </View>
-                  <TouchableOpacity 
-                    style={[
-                      styles.otpButton,
-                      (otpLoading || !phoneNumber || phoneNumber.length !== 10) && styles.otpButtonDisabled
-                    ]}
-                    onPress={handleSendOtp}
-                    disabled={otpLoading || !phoneNumber || phoneNumber.length !== 10}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.otpButtonText}>
-                      {otpLoading ? 'Sending...' : 'Send OTP'}
-                    </Text>
-                  </TouchableOpacity>
+                </View>
+                
+                {/* Welcome Section */}
+                <View style={styles.welcomeSection}>
+                  <Text style={styles.welcomeTitle}>Welcome</Text>
+                  <Text style={styles.welcomeSubtitle}>Log into your account</Text>
                 </View>
               </View>
               
-              {/* OTP Input */}
-              {showOtpField && (
+              {/* Middle Section - Form */}
+              <View style={styles.formSection}>
+                {/* Phone Number Input with Send OTP Button */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>OTP</Text>
-                  <View style={styles.inputContainer}>
-                    <TextInput
-                      style={styles.input}
-                      value={otp}
-                      onChangeText={setOtp}
-                      placeholder="Enter OTP"
-                      placeholderTextColor="#999"
-                      keyboardType="numeric"
-                      maxLength={6}
-                      autoComplete="sms-otp"
-                      textContentType="oneTimeCode"
-                    />
+                  <Text style={styles.inputLabel}>PHONE NUMBER</Text>
+                  <View style={styles.phoneInputRow}>
+                    <View style={styles.phoneInputContainer}>
+                      <TextInput
+                        style={styles.input}
+                        value={phoneNumber}
+                        onChangeText={setPhoneNumber}
+                        placeholder="Enter Mobile Number"
+                        placeholderTextColor="#999"
+                        keyboardType="phone-pad"
+                        maxLength={10}
+                      />
+                    </View>
+                    <TouchableOpacity 
+                      style={[
+                        styles.otpButton,
+                        (otpLoading || !phoneNumber || phoneNumber.length !== 10) && styles.otpButtonDisabled
+                      ]}
+                      onPress={handleSendOtp}
+                      disabled={otpLoading || !phoneNumber || phoneNumber.length !== 10}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.otpButtonText}>
+                        {otpLoading ? 'Sending...' : 'Send OTP'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-              )}
-            </View>
-            
-            {/* Bottom Section - Login Button */}
-            <View style={styles.bottomSection}>
-              <TouchableOpacity 
-                style={[
-                  styles.loginButton,
-                  (loading || !phoneNumber || !showOtpField || !otp) && styles.loginButtonDisabled
-                ]}
-                onPress={handleLogin}
-                disabled={loading || !phoneNumber || !showOtpField || !otp}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.loginButtonText}>
-                  {loading ? 'LOGGING IN...' : 'LOG IN'}
-                </Text>
-              </TouchableOpacity>
+                
+                {/* OTP Input */}
+                {showOtpField && (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>OTP</Text>
+                    <View style={styles.inputContainer}>
+                      <TextInput
+                        style={styles.input}
+                        value={otp}
+                        onChangeText={setOtp}
+                        placeholder="Enter OTP"
+                        placeholderTextColor="#999"
+                        keyboardType="numeric"
+                        maxLength={6}
+                        autoComplete="sms-otp"
+                        textContentType="oneTimeCode"
+                      />
+                    </View>
+                  </View>
+                )}
+              </View>
               
-              {/* Sign Up Link */}
-              <TouchableOpacity onPress={handleSignUp} style={styles.signUpContainer}>
-                <Text style={styles.signUpText}>
-                  Don't have an account? <Text style={styles.signUpLink}>Sign Up</Text>
-                </Text>
-              </TouchableOpacity>
+              {/* Bottom Section - Login Button */}
+              <View style={styles.bottomSection}>
+                <TouchableOpacity 
+                  style={[
+                    styles.loginButton,
+                    (loading || !phoneNumber || !showOtpField || !otp) && styles.loginButtonDisabled
+                  ]}
+                  onPress={handleLogin}
+                  disabled={loading || !phoneNumber || !showOtpField || !otp}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.loginButtonText}>
+                    {loading ? 'LOGGING IN...' : 'LOG IN'}
+                  </Text>
+                </TouchableOpacity>
+                
+                {/* Sign Up Link */}
+                <TouchableOpacity onPress={handleSignUp} style={styles.signUpContainer}>
+                  <Text style={styles.signUpText}>
+                    Don't have an account? <Text style={styles.signUpLink}>Sign Up</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </LinearGradient>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </LinearGradient>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </PageTransition>
   );
 }
 

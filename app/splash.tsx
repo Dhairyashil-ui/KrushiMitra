@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,18 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import PageTransition from '@/components/PageTransition';
+import { replaceWithTransition } from '@/src/utils/navigation';
 
 const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
-  const router = useRouter();
   const fadeAnimation = useRef(new Animated.Value(0)).current;
   const scaleAnimation = useRef(new Animated.Value(0.3)).current;
   const pulseAnimation = useRef(new Animated.Value(1)).current;
   const textSlideAnimation = useRef(new Animated.Value(30)).current;
+  const [transitioning, setTransitioning] = useState(false);
 
   useEffect(() => {
     // Start animations
@@ -29,18 +30,24 @@ export default function SplashScreen() {
       try {
         // Clean splash experience
         setTimeout(() => {
-          router.replace('/language');
+          setTransitioning(true);
         }, 3000);
       } catch (error) {
         console.error('Error during splash navigation:', error);
         setTimeout(() => {
-          router.replace('/language');
+          setTransitioning(true);
         }, 4000);
       }
     };
 
     checkFlow();
   }, []);
+
+  useEffect(() => {
+    if (transitioning) {
+      replaceWithTransition('/language');
+    }
+  }, [transitioning]);
 
   const startAnimations = () => {
     // Main entrance animation sequence
@@ -85,53 +92,55 @@ export default function SplashScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientBackground}
-      >
+    <PageTransition isActive={!transitioning} type="scale">
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
 
-        {/* Main Content */}
-        <Animated.View style={[
-          styles.logoContainer,
-          {
-            opacity: fadeAnimation,
-            transform: [{ scale: scaleAnimation }],
-          }
-        ]}>
-          {/* Main Logo Circle */}
+          {/* Main Content */}
           <Animated.View style={[
-            styles.logoCircle,
+            styles.logoContainer,
             {
-              transform: [{ scale: pulseAnimation }],
-            }
-          ]}>
-            <View style={styles.logoWrapper}>
-              <Image 
-                source={require('./logoai.jpg')} 
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-          </Animated.View>
-
-          {/* App Title */}
-          <Animated.View style={[
-            styles.titleContainer,
-            {
-              transform: [{ translateY: textSlideAnimation }],
               opacity: fadeAnimation,
+              transform: [{ scale: scaleAnimation }],
             }
           ]}>
-            <Text style={styles.appName}>KrushiAI</Text>
-            <Text style={styles.tagline}>Smart Farming Solutions</Text>
-            <Text style={styles.subtitle}>Empowering Farmers with AI Technology</Text>
+            {/* Main Logo Circle */}
+            <Animated.View style={[
+              styles.logoCircle,
+              {
+                transform: [{ scale: pulseAnimation }],
+              }
+            ]}>
+              <View style={styles.logoWrapper}>
+                <Image 
+                  source={require('./logoai.jpg')} 
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+              </View>
+            </Animated.View>
+
+            {/* App Title */}
+            <Animated.View style={[
+              styles.titleContainer,
+              {
+                transform: [{ translateY: textSlideAnimation }],
+                opacity: fadeAnimation,
+              }
+            ]}>
+              <Text style={styles.appName}>KrushiAI</Text>
+              <Text style={styles.tagline}>Smart Farming Solutions</Text>
+              <Text style={styles.subtitle}>Empowering Farmers with AI Technology</Text>
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
-      </LinearGradient>
-    </View>
+        </LinearGradient>
+      </View>
+    </PageTransition>
   );
 }
 
