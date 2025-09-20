@@ -23,7 +23,7 @@ import {
   Calendar,
   Sun,
   Zap,
-  Award,
+  Star,
   AlertCircle,
   BarChart3,
   Activity
@@ -125,7 +125,7 @@ export default function ActivityTrackingScreen() {
     {
       id: '1',
       type: 'success',
-      icon: <Award size={18} color="#4CAF50" />,
+      icon: <Star size={18} color="#4CAF50" />,
       title: 'Great Progress!',
       message: 'You worked 6.5 hrs today 🌱'
     },
@@ -212,13 +212,13 @@ export default function ActivityTrackingScreen() {
   const getInsightCardColors = (type: string) => {
     switch (type) {
       case 'success':
-        return ['#F0FDF4', '#DCFCE7'];
+        return ['#F0FDF4', '#DCFCE7'] as const;
       case 'warning':
-        return ['#FFFBEB', '#FEF3C7'];
+        return ['#FFFBEB', '#FEF3C7'] as const;
       case 'info':
-        return ['#EFF6FF', '#DBEAFE'];
+        return ['#EFF6FF', '#DBEAFE'] as const;
       default:
-        return ['#F9FAFB', '#F3F4F6'];
+        return ['#F9FAFB', '#F3F4F6'] as const;
     }
   };
 

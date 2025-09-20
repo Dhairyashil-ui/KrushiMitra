@@ -27,9 +27,9 @@ const introSlides = [
   },
   {
     id: 4,
-    icon: '📋',
-    title: 'Government Schemes',
-    description: 'Access information about farming subsidies and schemes',
+    icon: '🌱',
+    title: 'Crop Care',
+    description: 'Get expert advice on crop disease detection and treatment',
   },
   {
     id: 5,

@@ -149,9 +149,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 40,
@@ -171,12 +171,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#4CAF50',
   },
   logoImage: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 120,
   },
   titleContainer: {
     alignItems: 'center',

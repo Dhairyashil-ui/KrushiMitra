@@ -7,6 +7,7 @@ import {
   ScrollView,
   SafeAreaView,
   Platform,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,24 +15,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Wheat, CheckCircle } from 'lucide-react-native';
 
 const languages = [
-  { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া' },
-  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা' },
-  { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
-  { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ' },
-  { code: 'ks', name: 'Kashmiri', nativeName: 'کٲشُر' },
-  { code: 'gom', name: 'Konkani', nativeName: 'कोंकणी' },
   { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം' },
-  { code: 'mni', name: 'Manipuri', nativeName: 'ꯃꯤꯇꯩ ꯂꯣꯟ' },
-  { code: 'mr', name: 'Marathi', nativeName: 'मराठी' },
-  { code: 'ne', name: 'Nepali', nativeName: 'नेपाली' },
-  { code: 'or', name: 'Oriya (Odia)', nativeName: 'ଓଡ଼ିଆ' },
-  { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ' },
-  { code: 'sa', name: 'Sanskrit', nativeName: 'संस्कृतम्' },
-  { code: 'sd', name: 'Sindhi', nativeName: 'سنڌي' },
-  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
-  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు' },
-  { code: 'ur', name: 'Urdu', nativeName: 'اردو' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
   { code: 'en', name: 'English', nativeName: 'English' },
 ];
 
@@ -62,13 +47,16 @@ export default function LanguageScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0.3 }}
       >
-        {/* Top Section - Logo and App Name */}
+        {/* Top Section - Logo */}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
             <View style={styles.logoWrapper}>
-              <Wheat size={40} color="#4CAF50" />
+              <Image 
+                source={require('./logoai.jpg')} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
-            <Text style={styles.appName}>KrushiAI</Text>
           </View>
         </View>
         
@@ -157,13 +145,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoWrapper: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 140,
+    height: 140,
+    borderRadius: 60,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
     shadowColor: '#4CAF50',
     shadowOffset: {
       width: 0,
@@ -172,6 +159,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
+  },
+  logoImage: {
+    width: 100,
+    height: 100,
   },
   appName: {
     fontSize: 28,

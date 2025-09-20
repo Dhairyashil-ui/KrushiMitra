@@ -266,7 +266,7 @@ export default function HomeScreen() {
   };
 
   const navigateToSchemes = () => {
-    console.log('Navigate to Government Schemes');
+    router.push('/schemes');
   };
 
   const navigateToCropDisease = () => {
@@ -365,6 +365,32 @@ export default function HomeScreen() {
         speakResponse("Opening AI chat");
         return;
       }
+      
+      if (lowerText.includes('open government schemes') || lowerText.includes('schemes page')) {
+        navigateToSchemes();
+        speakResponse("Opening schemes page, Based on your profile, I recommend applying for the PM Kisan Samman Nidhi scheme. This provides direct income support of ₹6,000 per year to small and marginal farmers like yourself.");
+        return;
+      }
+      
+      if (lowerText.includes('open mandi prices') || lowerText.includes('mandi prices page')) {
+        navigateToMandiPrices();
+        speakResponse("Opening mandi prices page");
+        return;
+      }
+      
+      if (lowerText.includes('open news') || lowerText.includes('farming news')) {
+        navigateToNews();
+        speakResponse("Opening farming news page");
+        return;
+      }
+      
+      if (lowerText.includes('open carbosafe') || lowerText.includes('carbosafe page')) {
+        navigateToCarboSafe();
+        speakResponse("Opening carbosafe page");
+        return;
+      }
+
+
       
       // Show that we're processing for general queries
       setIsSpeaking(true);
@@ -626,7 +652,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
           
           <View style={styles.headerCenter}>
-            <Text style={styles.appTitle}>KrushiAI</Text>
+            <Text style={styles.appTitle}>KrushiMitra</Text>
             <View style={styles.locationRow}>
               <MapPin size={14} color="#6B7280" />
               <Text style={styles.locationText}>Pune, Maharashtra</Text>
@@ -882,7 +908,7 @@ export default function HomeScreen() {
             ]}
           >
             <LinearGradient
-              colors={['#FFFFFF', '#FDFDFD', '#FAFAFA']}
+              colors={['#FFFFFF', '#F8FDF9', '#F0FDF4']}
               style={styles.weatherCardGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -890,7 +916,7 @@ export default function HomeScreen() {
               <View style={styles.currentWeatherHeader}>
                 <View style={styles.locationContainer}>
                   <View style={styles.locationIconWrapper}>
-                    <MapPin size={16} color="#FFB200" />
+                    <Leaf size={16} color="#4CAF50" />
                   </View>
                   <Text style={styles.locationText}>Hinjawadi, Pune</Text>
                 </View>
@@ -933,7 +959,7 @@ export default function HomeScreen() {
                       }]}
                     >
                       <View style={styles.iconBackground}>
-                        <Cloud size={52} color="#FFB200" />
+                        <Cloud size={52} color="#4CAF50" />
                       </View>
                     </Animated.View>
                     <Text style={styles.weatherCondition}>Light Rain</Text>
@@ -944,22 +970,22 @@ export default function HomeScreen() {
                 <View style={styles.miniStatsContainer}>
                   <View style={styles.miniStatsGrid}>
                     <View style={styles.miniStat}>
-                      <View style={styles.statIconWrapper}>
-                        <Cloud size={16} color="#FFB200" />
+                      <View style={[styles.statIconWrapper, { backgroundColor: '#E8F5E9' }]}>
+                        <Cloud size={16} color="#4CAF50" />
                       </View>
                       <Text style={styles.miniStatValue}>65%</Text>
                       <Text style={styles.miniStatLabel}>Precipitation</Text>
                     </View>
                     <View style={styles.miniStat}>
-                      <View style={styles.statIconWrapper}>
-                        <Thermometer size={16} color="#FFB200" />
+                      <View style={[styles.statIconWrapper, { backgroundColor: '#E8F5E9' }]}>
+                        <Thermometer size={16} color="#4CAF50" />
                       </View>
                       <Text style={styles.miniStatValue}>82%</Text>
                       <Text style={styles.miniStatLabel}>Humidity</Text>
                     </View>
                     <View style={styles.miniStat}>
-                      <View style={styles.statIconWrapper}>
-                        <Activity size={16} color="#FFB200" />
+                      <View style={[styles.statIconWrapper, { backgroundColor: '#E8F5E9' }]}>
+                        <Activity size={16} color="#4CAF50" />
                       </View>
                       <Text style={styles.miniStatValue}>12 km/h</Text>
                       <Text style={styles.miniStatLabel}>Wind</Text>
@@ -967,86 +993,21 @@ export default function HomeScreen() {
                   </View>
                 </View>
               </View>
-            </LinearGradient>
-          </Animated.View>
-          
-          {/* Hourly Temperature Chart */}
-          <Animated.View 
-            style={[
-              styles.hourlyChartCard,
-              {
-                opacity: weatherAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.9, 1]
-                })
-              }
-            ]}
-          >
-            <LinearGradient
-              colors={['#FFFFFF', '#FDFDFD']}
-              style={styles.chartCardGradient}
-            >
-              <View style={styles.chartHeader}>
-                <Text style={styles.chartTitle}>Today's Temperature</Text>
-                <View style={styles.chartBadge}>
-                  <Text style={styles.chartBadgeText}>24H</Text>
+              
+              {/* Farming Advisory Section */}
+              <View style={styles.advisorySection}>
+                <View style={styles.advisoryIconWrapper}>
+                  <Sparkles size={20} color="#4CAF50" />
                 </View>
-              </View>
-              <View style={styles.chartContainer}>
-                {/* Enhanced Chart Line */}
-                <View style={styles.chartGrid}>
-                  <Animated.View 
-                    style={[
-                      styles.temperatureLine,
-                      {
-                        opacity: weatherAnimation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.7, 1]
-                        })
-                      }
-                    ]}
-                  />
-                  <Animated.View 
-                    style={[
-                      styles.temperatureFill,
-                      {
-                        opacity: weatherAnimation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.3, 0.6]
-                        })
-                      }
-                    ]}
-                  />
-                  {/* Chart dots */}
-                  {[20, 35, 50, 65, 80, 95].map((position, index) => (
-                    <Animated.View
-                      key={index}
-                      style={[
-                        styles.chartDot,
-                        {
-                          left: `${position}%`,
-                          opacity: weatherAnimation.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.5, 1]
-                          })
-                        }
-                      ]}
-                    />
-                  ))}
-                </View>
-                <View style={styles.chartLabels}>
-                  {['6 AM', '9 AM', '12 PM', '3 PM', '6 PM', '9 PM'].map((time, index) => (
-                    <View key={index} style={styles.timeLabel}>
-                      <Text style={styles.tempLabelText}>{[22, 24, 26, 28, 25, 23][index]}°</Text>
-                      <Text style={styles.timeLabelText}>{time}</Text>
-                    </View>
-                  ))}
+                <View style={styles.advisoryTextContainer}>
+                  <Text style={styles.advisoryTitle}>Farming Advisory</Text>
+                  <Text style={styles.advisoryText}>Light rain expected. Good time for irrigation and soil preparation.</Text>
                 </View>
               </View>
             </LinearGradient>
           </Animated.View>
           
-          {/* 7-Day Forecast */}
+          {/* Weekly Forecast */}
           <Animated.View 
             style={[
               styles.weeklyForecastCard,
@@ -1059,96 +1020,98 @@ export default function HomeScreen() {
             ]}
           >
             <LinearGradient
-              colors={['#FFFFFF', '#FDFDFD']}
+              colors={['#FFFFFF', '#F8FDF9']}
               style={styles.forecastCardGradient}
             >
               <View style={styles.forecastHeader}>
                 <Text style={styles.forecastTitle}>7-Day Forecast</Text>
-                <View style={styles.forecastBadge}>
-                  <Text style={styles.forecastBadgeText}>WEEK</Text>
+                <View style={[styles.forecastBadge, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+                  <Text style={[styles.forecastBadgeText, { color: '#4CAF50' }]}>WEEK</Text>
                 </View>
               </View>
               <View style={styles.forecastGrid}>
                 {[
-                  { day: 'Today', icon: Cloud, high: 28, low: 22, isToday: true },
-                  { day: 'Tue', icon: Cloud, high: 30, low: 24, isToday: false },
-                  { day: 'Wed', icon: Cloud, high: 32, low: 26, isToday: false },
-                  { day: 'Thu', icon: Cloud, high: 29, low: 23, isToday: false },
-                  { day: 'Fri', icon: Cloud, high: 27, low: 21, isToday: false },
-                  { day: 'Sat', icon: Cloud, high: 31, low: 25, isToday: false },
-                  { day: 'Sun', icon: Cloud, high: 33, low: 27, isToday: false }
-                ].map((forecast, index) => (
-                  <Animated.View 
+                  { day: 'Today', high: 26, low: 18, icon: '☀️' },
+                  { day: 'Tue', high: 28, low: 20, icon: '🌤️' },
+                  { day: 'Wed', high: 24, low: 19, icon: '🌧️' },
+                  { day: 'Thu', high: 23, low: 17, icon: '🌧️' },
+                  { day: 'Fri', high: 25, low: 18, icon: '⛅' },
+                  { day: 'Sat', high: 27, low: 20, icon: '☀️' },
+                  { day: 'Sun', high: 29, low: 22, icon: '☀️' }
+                ].map((day, index) => (
+                  <View 
                     key={index} 
                     style={[
                       styles.dailyForecastCard,
-                      forecast.isToday && styles.todayCard,
-                      {
-                        opacity: weatherAnimation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.8, 1]
-                        }),
-                        transform: [{
-                          translateY: weatherAnimation.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [5, 0]
-                          })
-                        }]
-                      }
+                      index === 0 && styles.todayCard,
+                      index === 0 && { borderColor: '#4CAF50' }
                     ]}
                   >
                     <Text style={[
                       styles.dayName,
-                      forecast.isToday && styles.todayText
-                    ]}>{forecast.day}</Text>
+                      index === 0 && styles.todayText,
+                      index === 0 && { color: '#4CAF50' }
+                    ]}>
+                      {day.day}
+                    </Text>
                     <View style={styles.dayIconContainer}>
                       <View style={[
                         styles.dayIconWrapper,
-                        forecast.isToday && styles.todayIconWrapper
+                        index === 0 && styles.todayIconWrapper,
+                        index === 0 && { backgroundColor: 'rgba(76, 175, 80, 0.2)' }
                       ]}>
-                        <forecast.icon size={24} color={forecast.isToday ? '#FFB200' : '#777'} />
+                        <Text style={{ fontSize: 20 }}>{day.icon}</Text>
                       </View>
                     </View>
                     <View style={styles.dayTemps}>
                       <Text style={[
                         styles.highTemp,
-                        forecast.isToday && styles.todayTemp
-                      ]}>{forecast.high}°</Text>
-                      <Text style={styles.lowTemp}>{forecast.low}°</Text>
+                        index === 0 && styles.todayTemp,
+                        index === 0 && { color: '#4CAF50' }
+                      ]}>
+                        {day.high}°
+                      </Text>
+                      <Text style={styles.lowTemp}>{day.low}°</Text>
                     </View>
-                  </Animated.View>
+                  </View>
                 ))}
               </View>
             </LinearGradient>
           </Animated.View>
         </View>
 
-        {/* AI Modal Popup */}
+        {/* AI Assistant Modal */}
         <Modal
-          visible={showAIModal}
+          animationType="slide"
           transparent={true}
-          animationType="fade"
+          visible={showAIModal}
           onRequestClose={() => setShowAIModal(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setShowAIModal(false)}
-              >
-                <X size={24} color="#6B7280" />
-              </TouchableOpacity>
-              
-              <LinearGradient
-                colors={['#22C55E', '#16A34A', '#15803D']}
-                style={styles.modalContent}
-              >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalTitleContainer}>
+                  <Bot size={24} color="#4CAF50" />
+                  <Text style={styles.modalTitle}>KrushiAI Assistant</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.modalCloseButton} 
+                  onPress={() => setShowAIModal(false)}
+                >
+                  <X size={20} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.modalBody}>
                 <View style={styles.modalSparkleContainer}>
                   <Sparkles size={16} color="rgba(255, 255, 255, 0.6)" style={styles.modalSparkle1} />
                   <Sparkles size={12} color="rgba(255, 255, 255, 0.4)" style={styles.modalSparkle2} />
                   <Sparkles size={14} color="rgba(255, 255, 255, 0.5)" style={styles.modalSparkle3} />
                 </View>
                 
+                <View style={styles.modalTitleContainer}>
+                  <Text style={styles.modalTitle}>KrushiAI</Text>
+                  <Text style={styles.modalSubtitle}>Your Personal Farming Assistant</Text>
+                </View>
                 <Animated.View style={[
                   styles.glowingAIContainer,
                   {
@@ -1169,24 +1132,7 @@ export default function HomeScreen() {
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                     >
-                      <View style={styles.circleContent}>
-                        <Bot size={60} color="#0369A1" />
-                        <Animated.View style={[
-                          styles.pulseRing,
-                          {
-                            opacity: glowAnimation.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [0.3, 0.8],
-                            }),
-                            transform: [{
-                              scale: glowAnimation.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [1, 1.1],
-                              })
-                            }]
-                          }
-                        ]} />
-                      </View>
+                      <Bot size={90} color="#FFFFFF" />
                     </LinearGradient>
                   </View>
                 </Animated.View>
@@ -1221,7 +1167,7 @@ export default function HomeScreen() {
                     <Text style={styles.startChatText}>Start Chatting</Text>
                   </LinearGradient>
                 </TouchableOpacity>
-              </LinearGradient>
+              </View>
             </View>
           </View>
         </Modal>
@@ -1964,6 +1910,10 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     width: '90%',
     maxWidth: 380,
     minHeight: 450,
@@ -1976,6 +1926,25 @@ const styles = StyleSheet.create({
     elevation: 20,
     // Perfect centering
     alignSelf: 'center',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
+  },
+  modalCloseButton: {
+    padding: 5,
+  },
+  modalBody: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   closeButton: {
     position: 'absolute',
@@ -2477,112 +2446,6 @@ const styles = StyleSheet.create({
     color: '#777',
     fontWeight: '500',
   },
-  hourlyChartCard: {
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-    overflow: 'hidden',
-  },
-  chartCardGradient: {
-    padding: 24,
-    borderRadius: 20,
-  },
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
-  },
-  chartBadge: {
-    backgroundColor: 'rgba(255, 178, 0, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  chartBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FFB200',
-  },
-  chartContainer: {
-    height: 140,
-    position: 'relative',
-  },
-  chartGrid: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-  },
-  temperatureLine: {
-    position: 'absolute',
-    top: 40,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: '#FFB200',
-    borderRadius: 2,
-    shadowColor: '#FFB200',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  temperatureFill: {
-    position: 'absolute',
-    top: 44,
-    left: 0,
-    right: 0,
-    height: 56,
-    backgroundColor: 'rgba(255, 178, 0, 0.15)',
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  chartDot: {
-    position: 'absolute',
-    top: 38,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FFB200',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: '#FFB200',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
-  },
-  chartLabels: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-  },
-  timeLabel: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  tempLabelText: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '700',
-  },
-  timeLabelText: {
-    fontSize: 11,
-    color: '#777',
-    fontWeight: '500',
-  },
   weeklyForecastCard: {
     borderRadius: 20,
     shadowColor: '#000',
@@ -2682,6 +2545,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#777',
     fontWeight: '500',
+  },
+  // Weather Advisory Section
+  advisorySection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.05)',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  advisoryIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  advisoryTextContainer: {
+    flex: 1,
+  },
+  advisoryTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#4CAF50',
+    marginBottom: 4,
+  },
+  advisoryText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
   },
   // Voice Assistant Styles
   micIconContainer: {

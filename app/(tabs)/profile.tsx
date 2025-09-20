@@ -181,7 +181,6 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.userName}>{userData?.name || 'Farmer'}</Text>
             <View style={styles.userBadge}>
-              <Award size={14} color="#FCD34D" />
               <Text style={styles.userBadgeText}>Verified Farmer</Text>
             </View>
             
@@ -237,9 +236,8 @@ export default function ProfileScreen() {
               colors={['#4CAF50', '#2E7D32']}
               style={styles.statGradient}
             >
-              <Award size={24} color="#FFFFFF" />
               <Text style={styles.statNumber}>5</Text>
-              <Text style={styles.statLabel}>Schemes</Text>
+              <Text style={styles.statLabel}></Text>
             </LinearGradient>
           </View>
           <View style={styles.statCard}>

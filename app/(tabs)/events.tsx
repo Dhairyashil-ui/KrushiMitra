@@ -19,10 +19,10 @@ import {
   PlayCircle,
   Trophy,
   TrendingUp,
-  Award,
   Target,
   Wheat,
-  Sparkles
+  Sparkles,
+  CheckCircle
 } from 'lucide-react-native';
 
 interface Event {
@@ -291,7 +291,7 @@ export default function EventsScreen() {
         </View>
         <View style={styles.statCard}>
           <View style={styles.statIcon}>
-            <Award size={18} color="#FF9800" />
+            <CheckCircle size={18} color="#FF9800" />
           </View>
           <Text style={styles.statNumber}>8</Text>
           <Text style={styles.statLabel}>Completed</Text>
