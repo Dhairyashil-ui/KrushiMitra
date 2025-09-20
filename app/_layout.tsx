@@ -30,6 +30,7 @@ export default function RootLayout() {
         <Stack.Screen name="ai-chat" />
         <Stack.Screen name="crop-disease" />
         <Stack.Screen name="activity-tracking" />
+        <Stack.Screen name="test-ai-storage" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" />
       </Stack>

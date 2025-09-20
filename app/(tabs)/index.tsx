@@ -25,6 +25,9 @@ import {
   MicOff
 } from 'lucide-react-native';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { saveAIInteraction } from '@/src/utils/api'; // Correct import path
+
+
 
 export default function HomeScreen() {
   const [userData, setUserData] = useState<any>(null);
@@ -324,10 +327,50 @@ export default function HomeScreen() {
       const updatedHistory = [...conversationHistory, { role: "user", parts: text }];
       setConversationHistory(updatedHistory);
       
-      // Show that we're processing
+      // Check for navigation commands first
+      const lowerText = text.toLowerCase();
+      
+      // Navigation commands
+      if (lowerText.includes('open crop') || lowerText.includes('crop disease') || lowerText.includes('crop page')) {
+        navigateToCropDisease();
+        speakResponse("Opening crop disease detection page");
+        return;
+      }
+      
+      if (lowerText.includes('open events') || lowerText.includes('events page')) {
+        router.push('/events');
+        speakResponse("Opening events page");
+        return;
+      }
+      
+      if (lowerText.includes('open profile') || lowerText.includes('profile page')) {
+        router.push('/profile');
+        speakResponse("Opening profile page");
+        return;
+      }
+      
+      if (lowerText.includes('open community') || lowerText.includes('community page')) {
+        router.push('/community');
+        speakResponse("Opening community page");
+        return;
+      }
+      
+      if (lowerText.includes('open activity') || lowerText.includes('activity tracking')) {
+        navigateToActivityTracking();
+        speakResponse("Opening activity tracking page");
+        return;
+      }
+      
+      if (lowerText.includes('open chat') || lowerText.includes('ai chat')) {
+        router.push('/ai-chat');
+        speakResponse("Opening AI chat");
+        return;
+      }
+      
+      // Show that we're processing for general queries
       setIsSpeaking(true);
       
-      // Generate response using Gemini
+      // Generate response using Gemini for general queries
       if (modelRef.current) {
         const prompt = `You are KrushiAI, an intelligent farming assistant. Provide helpful, concise responses to farming questions. 
         User query: ${text}
@@ -341,10 +384,47 @@ export default function HomeScreen() {
         // Add AI response to conversation history
         setConversationHistory([...updatedHistory, { role: "model", parts: responseText }]);
         
+        // Save interaction to MongoDB
+        try {
+          const interactionSaved = await saveAIInteraction({
+            farmerId: userData?.id || userData?.phone || 'anonymous',
+            query: text,
+            response: responseText,
+            context: {}
+          });
+          
+          if (interactionSaved) {
+            console.log('AI interaction saved successfully to MongoDB');
+          } else {
+            console.warn('Failed to save AI interaction to MongoDB');
+          }
+        } catch (error) {
+          console.error('Error saving interaction to MongoDB:', error);
+        }
+        
         // Speak the response
         speakResponse(responseText);
       } else {
         const fallbackResponse = "I'm your KrushiAI farming assistant. I can help with crop care, weather updates, pest control, and farming advice. What would you like to know?";
+        
+        // Save fallback response to MongoDB
+        try {
+          const interactionSaved = await saveAIInteraction({
+            farmerId: userData?.id || userData?.phone || 'anonymous',
+            query: text,
+            response: fallbackResponse,
+            context: {}
+          });
+          
+          if (interactionSaved) {
+            console.log('AI interaction saved successfully to MongoDB');
+          } else {
+            console.warn('Failed to save AI interaction to MongoDB');
+          }
+        } catch (error) {
+          console.error('Error saving interaction to MongoDB:', error);
+        }
+        
         speakResponse(fallbackResponse);
         setConversationHistory([...updatedHistory, { role: "model", parts: fallbackResponse }]);
       }
