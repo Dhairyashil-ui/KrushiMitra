@@ -10,9 +10,10 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Wheat, ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 export default function SignUpScreen() {
@@ -111,7 +112,7 @@ export default function SignUpScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0.3 }}
         >
-          {/* Top Section - Logo and App Name */}
+          {/* Top Section - Logo */}
           <View style={styles.topSection}>
             <TouchableOpacity style={styles.backButton} onPress={handleBack}>
               <ArrowLeft size={24} color="#4CAF50" />
@@ -119,9 +120,12 @@ export default function SignUpScreen() {
             
             <View style={styles.logoContainer}>
               <View style={styles.logoWrapper}>
-                <Wheat size={40} color="#4CAF50" />
+                <Image 
+                  source={require('../logoai.jpg')} 
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
               </View>
-              <Text style={styles.appName}>KrushiAI</Text>
             </View>
             
             <View style={styles.placeholder} />
@@ -312,9 +316,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoWrapper: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 140,
+    height: 140,
+    borderRadius: 60,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -327,6 +331,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
+  },
+  logoImage: {
+    width: 100,
+    height: 100,
   },
   appName: {
     fontSize: 24,

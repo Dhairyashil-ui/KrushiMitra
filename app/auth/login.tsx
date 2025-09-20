@@ -8,10 +8,10 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Wheat } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -65,13 +65,16 @@ export default function LoginScreen() {
           end={{ x: 1, y: 0.3 }}
         >
           <View style={styles.content}>
-            {/* Top Section - Logo and App Name */}
+            {/* Top Section - Logo */}
             <View style={styles.topSection}>
               <View style={styles.logoContainer}>
                 <View style={styles.logoWrapper}>
-                  <Wheat size={40} color="#4CAF50" />
+                  <Image 
+                    source={require('../logoai.jpg')} 
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
                 </View>
-                <Text style={styles.appName}>KrushiAI</Text>
               </View>
               
               {/* Welcome Section */}
@@ -186,18 +189,17 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   logoContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 20,
   },
   logoWrapper: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 180, // Increased size
+    height: 180, // Increased size
+    borderRadius: 60, // Adjusted for new size
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
     shadowColor: '#4CAF50',
     shadowOffset: {
       width: 0,
@@ -206,12 +208,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
+    marginBottom: 16,
+  },
+  logoImage: {
+    width: 140, // Increased size
+    height: 140, // Increased size
   },
   appName: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#4CAF50',
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginTop: 10,
   },
   welcomeSection: {
     alignItems: 'center',

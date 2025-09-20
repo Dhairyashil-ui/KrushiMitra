@@ -7,10 +7,10 @@ import {
   Dimensions,
   StatusBar,
   Platform,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Wheat } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -109,7 +109,11 @@ export default function SplashScreen() {
             }
           ]}>
             <View style={styles.logoWrapper}>
-              <Wheat size={60} color="#4CAF50" />
+              <Image 
+                source={require('./logoai.jpg')} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
           </Animated.View>
 
@@ -169,6 +173,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#4CAF50',
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   titleContainer: {
     alignItems: 'center',
