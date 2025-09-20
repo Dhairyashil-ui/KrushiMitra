@@ -16,13 +16,13 @@ import {
   Menu,
   TrendingUp,
   Newspaper,
-  Phone,
   IndianRupee,
   Users,
   MapPin,
   Thermometer,
   Mic,
-  MicOff
+  MicOff,
+  Leaf
 } from 'lucide-react-native';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { saveAIInteraction } from '@/src/utils/api'; // Correct import path
@@ -283,9 +283,8 @@ export default function HomeScreen() {
     console.log('Navigate to Farming News');
   };
 
-  const callAI = () => {
-    // Trigger phone-like AI interaction
-    console.log('Call AI Assistant');
+  const navigateToCarboSafe = () => {
+    router.push('/carbosafe');
   };
 
   const openDrawerMenu = () => {
@@ -1303,7 +1302,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           
-          {/* Row 3: News & Call AI */}
+          {/* Row 3: News & CarboSafe */}
           <View style={styles.serviceRow}>
             <TouchableOpacity style={[styles.serviceCard, styles.serviceCardLarge]} onPress={navigateToNews}>
               <LinearGradient
@@ -1323,24 +1322,25 @@ export default function HomeScreen() {
               </LinearGradient>
             </TouchableOpacity>
             
-            <TouchableOpacity style={[styles.serviceCard, styles.serviceCardLarge]} onPress={callAI}>
+            <TouchableOpacity style={[styles.serviceCard, styles.serviceCardLarge]} onPress={navigateToCarboSafe}>
               <LinearGradient
-                colors={['#ECFDF5', '#D1FAE5', '#A7F3D0']}
+                colors={['#F0FDF4', '#DCFCE7', '#BBF7D0']}
                 style={styles.serviceGradient}
               >
                 <View style={styles.serviceHeader}>
                   <View style={styles.serviceIconContainer}>
-                    <Phone size={24} color="#10B981" />
+                    <Leaf size={24} color="#22C55E" />
                   </View>
-                  <Animated.View style={[{ transform: [{ scale: pulseAnimation }] }]}>
-                    <View style={styles.callIndicator} />
-                  </Animated.View>
+                  <View style={styles.carbonIndicator}>
+                    <Text style={styles.carbonText}>EARN</Text>
+                  </View>
                 </View>
-                <Text style={styles.serviceTitle}>Call AI Assistant</Text>
-                <Text style={styles.serviceDescription}>Voice interaction with AI</Text>
+                <Text style={styles.serviceTitle}>CarboSafe</Text>
+                <Text style={styles.serviceDescription}>Earn credits from green farming</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
+          
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -1896,14 +1896,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-  callIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10B981',
-    shadowColor: '#10B981',
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
+  carbonIndicator: {
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  carbonText: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   sectionTitle: {
     fontSize: 20,
