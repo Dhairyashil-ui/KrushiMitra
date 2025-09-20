@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Users, Bot, Calendar, User, Sprout } from 'lucide-react-native';
+import { Home, Users, Bot, Calendar, User } from 'lucide-react-native';
 import { View, Platform } from 'react-native';
 
 export default function TabLayout() {
