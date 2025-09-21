@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 interface Message {
   id: string;
+  
   text: string;
   isUser: boolean;
   timestamp: Date;

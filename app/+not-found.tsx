@@ -12,6 +12,7 @@ export default function NotFoundScreen() {
         </Link>
       </View>
     </>
+    
   );
 }
 

@@ -17,6 +17,7 @@ export default function LocationScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  
   const handlePermissionDenied = () => {
     Alert.alert(
       'Location Permission Required',

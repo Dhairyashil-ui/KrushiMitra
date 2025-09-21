@@ -3292,6 +3292,7 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: '#E5E7EB',
     borderRadius: 2,
+    
     overflow: 'hidden',
   },
   voiceProgressFill: {

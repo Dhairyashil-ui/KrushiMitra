@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 // @ts-ignore
 import Voice from '@react-native-voice/voice';
 
+
 interface ChatMessage extends IMessage {
   language?: string;
   image?: string;

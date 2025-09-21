@@ -16,6 +16,7 @@ import {
   Sparkles
 } from 'lucide-react-native';
 
+
 // Mock data for government schemes
 const mockSchemes = [
   {

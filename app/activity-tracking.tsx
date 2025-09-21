@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
   Animated,
+  
   Platform,
   Dimensions,
 } from 'react-native';

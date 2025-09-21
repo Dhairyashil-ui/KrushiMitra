@@ -12,6 +12,7 @@ export default function IndexScreen() {
     // Fade in animation for loading indicator
     Animated.timing(fadeAnimation, {
       toValue: 1,
+      
       duration: 300,
       useNativeDriver: true,
     }).start();

@@ -8,6 +8,7 @@ import {
   ScrollView, 
   Modal,
   Animated,
+  
   Alert,
   Dimensions
 } from 'react-native';

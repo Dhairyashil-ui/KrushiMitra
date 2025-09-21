@@ -16,6 +16,7 @@ import { Wheat, CheckCircle } from 'lucide-react-native';
 import PageTransition from '@/components/PageTransition';
 import { replaceWithTransition } from '@/src/utils/navigation';
 
+
 const languages = [
   { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം' },
   { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },

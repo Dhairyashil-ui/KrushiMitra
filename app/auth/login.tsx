@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  
   Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';

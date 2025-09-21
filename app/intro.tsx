@@ -14,6 +14,7 @@ const introSlides = [
     description: 'Get smart farming advice powered by artificial intelligence',
   },
   {
+    
     id: 2,
     icon: '🔍',
     title: 'Crop Disease Detection',

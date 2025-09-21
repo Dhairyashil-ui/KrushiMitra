@@ -7,6 +7,7 @@ import {
   SafeAreaView, 
   ScrollView,
   Animated,
+  
   Platform
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
