@@ -27,7 +27,9 @@ import {
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { saveAIInteraction } from '@/src/utils/api'; // Correct import path
 
-
+// Add a simple rate limiting mechanism
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10; // Maximum 10 requests per minute
 
 export default function HomeScreen() {
   const [userData, setUserData] = useState<any>(null);
@@ -44,6 +46,11 @@ export default function HomeScreen() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<{role: string, parts: string}[]>([]);
   const [audioLevel] = useState(new Animated.Value(1)); // For audio visualization
+  const [lastRequestTimes, setLastRequestTimes] = useState<number[]>([]); // For rate limiting
+  const [rateLimitStatus, setRateLimitStatus] = useState({
+    remainingRequests: MAX_REQUESTS_PER_WINDOW,
+    resetTime: 0
+  });
   
   const router = useRouter();
   const recognitionRef = useRef<any>(null);
@@ -192,12 +199,12 @@ export default function HomeScreen() {
     pulseLoop.start();
     
     // Start listening when component mounts
-    // Auto-start voice assistant when home page opens
-    setTimeout(() => {
-      if (Platform.OS === 'web') {
-        startListening();
-      }
-    }, 3000);
+    // Commented out to prevent automatic voice assistant activation
+    // setTimeout(() => {
+    //   if (Platform.OS === 'web') {
+    //     startListening();
+    //   }
+    // }, 3000);
     
     return () => {
       glowLoop.stop();
@@ -317,149 +324,7 @@ export default function HomeScreen() {
     }
   };
 
-  const handleVoiceInput = async (text: string) => {
-    if (!text.trim()) return;
-    
-    try {
-      // Add user message to conversation history
-      const updatedHistory = [...conversationHistory, { role: "user", parts: text }];
-      setConversationHistory(updatedHistory);
-      
-      // Check for navigation commands first
-      const lowerText = text.toLowerCase();
-      
-      // Navigation commands
-      if (lowerText.includes('open crop') || lowerText.includes('crop disease') || lowerText.includes('crop page')) {
-        navigateToCropDisease();
-        speakResponse("Opening crop disease detection page");
-        return;
-      }
-      
-      if (lowerText.includes('open events') || lowerText.includes('events page')) {
-        router.push('/events');
-        speakResponse("Opening events page");
-        return;
-      }
-      
-      if (lowerText.includes('open profile') || lowerText.includes('profile page')) {
-        router.push('/profile');
-        speakResponse("Opening profile page");
-        return;
-      }
-      
-      if (lowerText.includes('open community') || lowerText.includes('community page')) {
-        router.push('/community');
-        speakResponse("Opening community page");
-        return;
-      }
-      
-      if (lowerText.includes('open activity') || lowerText.includes('activity tracking')) {
-        navigateToActivityTracking();
-        speakResponse("Opening activity tracking page");
-        return;
-      }
-      
-      if (lowerText.includes('open chat') || lowerText.includes('ai chat')) {
-        router.push('/ai-chat');
-        speakResponse("Opening AI chat");
-        return;
-      }
-      
-      if (lowerText.includes('open government schemes') || lowerText.includes('schemes page')) {
-        navigateToSchemes();
-        speakResponse("Opening schemes page, Based on your profile, I recommend applying for the PM Kisan Samman Nidhi scheme. This provides direct income support of ₹6,000 per year to small and marginal farmers like yourself.");
-        return;
-      }
-      
-      if (lowerText.includes('open mandi prices') || lowerText.includes('mandi prices page')) {
-        navigateToMandiPrices();
-        speakResponse("Opening mandi prices page");
-        return;
-      }
-      
-      if (lowerText.includes('open news') || lowerText.includes('farming news')) {
-        navigateToNews();
-        speakResponse("Opening farming news page");
-        return;
-      }
-      
-      if (lowerText.includes('open carbosafe') || lowerText.includes('carbosafe page')) {
-        navigateToCarboSafe();
-        speakResponse("Opening carbosafe page");
-        return;
-      }
-
-
-      
-      // Show that we're processing for general queries
-      setIsSpeaking(true);
-      
-      // Generate response using Gemini for general queries
-      if (modelRef.current) {
-        const prompt = `You are KrushiAI, an intelligent farming assistant. Provide helpful, concise responses to farming questions. 
-        User query: ${text}
-        
-        Respond in a friendly, helpful manner with farming-specific advice.`;
-        
-        const result = await modelRef.current.generateContent(prompt);
-        const response = await result.response;
-        const responseText = response.text();
-        
-        // Add AI response to conversation history
-        setConversationHistory([...updatedHistory, { role: "model", parts: responseText }]);
-        
-        // Save interaction to MongoDB
-        try {
-          const interactionSaved = await saveAIInteraction({
-            farmerId: userData?.id || userData?.phone || 'anonymous',
-            query: text,
-            response: responseText,
-            context: {}
-          });
-          
-          if (interactionSaved) {
-            console.log('AI interaction saved successfully to MongoDB');
-          } else {
-            console.warn('Failed to save AI interaction to MongoDB');
-          }
-        } catch (error) {
-          console.error('Error saving interaction to MongoDB:', error);
-        }
-        
-        // Speak the response
-        speakResponse(responseText);
-      } else {
-        const fallbackResponse = "I'm your KrushiAI farming assistant. I can help with crop care, weather updates, pest control, and farming advice. What would you like to know?";
-        
-        // Save fallback response to MongoDB
-        try {
-          const interactionSaved = await saveAIInteraction({
-            farmerId: userData?.id || userData?.phone || 'anonymous',
-            query: text,
-            response: fallbackResponse,
-            context: {}
-          });
-          
-          if (interactionSaved) {
-            console.log('AI interaction saved successfully to MongoDB');
-          } else {
-            console.warn('Failed to save AI interaction to MongoDB');
-          }
-        } catch (error) {
-          console.error('Error saving interaction to MongoDB:', error);
-        }
-        
-        speakResponse(fallbackResponse);
-        setConversationHistory([...updatedHistory, { role: "model", parts: fallbackResponse }]);
-      }
-    } catch (error) {
-      console.error('Error processing voice input:', error);
-      const errorMessage = "Sorry, I encountered an error processing your request. Please try again.";
-      speakResponse(errorMessage);
-    }
-  };
-
-  const speakResponse = (text: string) => {
+  const speakResponse = (text: string, autoStartListening: boolean = false) => {
     if (Platform.OS === 'web' && 'speechSynthesis' in window) {
       // Cancel any ongoing speech
       window.speechSynthesis.cancel();
@@ -480,16 +345,26 @@ export default function HomeScreen() {
       utterance.onend = () => {
         stopSpeakingAnimation();
         setIsSpeaking(false);
-        // Auto-start listening again after speaking
-        setTimeout(() => {
-          startListening();
-        }, 1000);
+        // Auto-start listening again after speaking only if explicitly requested
+        if (autoStartListening) {
+          setTimeout(() => {
+            startListening();
+          }, 1000);
+        }
       };
       
       utterance.onerror = (event) => {
         stopSpeakingAnimation();
         console.error('Speech synthesis error:', event);
         setIsSpeaking(false);
+        // Auto-start listening again after speaking only if explicitly requested
+        if (autoStartListening) {
+          setTimeout(() => {
+            if (Platform.OS === 'web') {
+              startListening();
+            }
+          }, 1000);
+        }
       };
       
       // Add boundary events for more granular control
@@ -528,14 +403,250 @@ export default function HomeScreen() {
       
       window.speechSynthesis.speak(utterance);
     } else {
-      console.warn('Speech synthesis not supported or not on web platform');
+      console.warn('Speech synthesis not supported on this platform');
       setIsSpeaking(false);
-      // Auto-start listening again after speaking
-      setTimeout(() => {
-        if (Platform.OS === 'web') {
-          startListening();
+      // Auto-start listening again after speaking only if explicitly requested
+      if (autoStartListening) {
+        setTimeout(() => {
+          if (Platform.OS === 'web') {
+            startListening();
+          }
+        }, 1000);
+      }
+    }
+  };
+
+  const handleVoiceInput = async (text: string) => {
+    if (!text.trim()) return;
+    
+    try {
+      // Add user message to conversation history
+      const updatedHistory = [...conversationHistory, { role: "user", parts: text }];
+      setConversationHistory(updatedHistory);
+      
+      // Check for navigation commands first
+      const lowerText = text.toLowerCase();
+      
+      // Navigation commands
+      if (lowerText.includes('open crop') || lowerText.includes('crop disease') || lowerText.includes('crop page')) {
+        navigateToCropDisease();
+        speakResponse("Opening crop disease detection page", true);
+        return;
+      }
+      
+      if (lowerText.includes('open events') || lowerText.includes('events page')) {
+        router.push('/events');
+        speakResponse("Opening events page", true);
+        return;
+      }
+      
+      if (lowerText.includes('open profile') || lowerText.includes('profile page')) {
+        router.push('/profile');
+        speakResponse("Opening profile page", true);
+        return;
+      }
+      
+      if (lowerText.includes('open community') || lowerText.includes('community page')) {
+        router.push('/community');
+        speakResponse("Opening community page", true);
+        return;
+      }
+      
+      if (lowerText.includes('open activity') || lowerText.includes('activity tracking')) {
+        navigateToActivityTracking();
+        speakResponse("Opening activity tracking page", true);
+        return;
+      }
+      
+      if (lowerText.includes('open chat') || lowerText.includes('ai chat')) {
+        router.push('/ai-chat');
+        speakResponse("Opening AI chat", true);
+        return;
+      }
+      
+      if (lowerText.includes('open government schemes') || lowerText.includes('schemes page')) {
+        navigateToSchemes();
+        speakResponse("Opening schemes page, Based on your profile, I recommend applying for the PM Kisan Samman Nidhi scheme. This provides direct income support of ₹6,000 per year to small and marginal farmers like yourself.", true);
+        return;
+      }
+      
+      if (lowerText.includes('open mandi prices') || lowerText.includes('mandi prices page')) {
+        navigateToMandiPrices();
+        speakResponse("Opening mandi prices page", true);
+        return;
+      }
+      
+      if (lowerText.includes('open news') || lowerText.includes('farming news')) {
+        navigateToNews();
+        speakResponse("Opening farming news page", true);
+        return;
+      }
+      
+      if (lowerText.includes('open carbosafe') || lowerText.includes('carbosafe page')) {
+        navigateToCarboSafe();
+        speakResponse("Opening carbosafe page", true);
+        return;
+      }
+
+      // Rate limiting check
+      const now = Date.now();
+      const recentRequests = lastRequestTimes.filter(time => now - time < RATE_LIMIT_WINDOW);
+      const remainingRequests = MAX_REQUESTS_PER_WINDOW - recentRequests.length;
+      const resetTime = now + RATE_LIMIT_WINDOW;
+      
+      // Update rate limit status
+      setRateLimitStatus({
+        remainingRequests,
+        resetTime
+      });
+      
+      if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
+        console.warn('Rate limit exceeded: Too many requests in a short time');
+        const timeUntilReset = formatTimeUntilReset(rateLimitStatus.resetTime);
+        const rateLimitMessage = `You've reached the limit of ${MAX_REQUESTS_PER_WINDOW} requests per minute. Please wait ${timeUntilReset} before trying again.`;
+        speakResponse(rateLimitMessage);
+        setConversationHistory([...updatedHistory, { role: "model", parts: rateLimitMessage }]);
+        return;
+      }
+      
+      // Update request times
+      setLastRequestTimes([...recentRequests, now]);
+      
+      // Update rate limit status after adding the new request
+      setRateLimitStatus({
+        remainingRequests: remainingRequests - 1,
+        resetTime
+      });
+
+      // Show that we're processing for general queries
+      setIsSpeaking(true);
+      
+      // Generate response using Gemini for general queries with retry logic
+      if (modelRef.current) {
+        const prompt = `You are KrushiAI, an intelligent farming assistant. Provide helpful, concise responses to farming questions. 
+        User query: ${text}
+        
+        Respond in a friendly, helpful manner with farming-specific advice.`;
+        
+        try {
+          // Exponential backoff retry mechanism for handling 429 errors
+          let retryCount = 0;
+          const maxRetries = 3;
+          const baseDelay = 1000; // 1 second
+          
+          const getResultWithRetry = async (): Promise<any> => {
+            try {
+              return await modelRef.current.generateContent(prompt);
+            } catch (error: any) {
+              // Check if it's a rate limit error (429)
+              if ((error?.status === 429 || error?.message?.includes('429')) && retryCount < maxRetries) {
+                retryCount++;
+                const delay = baseDelay * Math.pow(2, retryCount); // Exponential backoff
+                console.warn(`Rate limit hit. Retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`);
+                
+                // Wait for the delay
+                await new Promise(resolve => setTimeout(resolve, delay));
+                
+                // Retry
+                return getResultWithRetry();
+              } else {
+                // Re-throw the error if it's not a rate limit error or we've exhausted retries
+                throw error;
+              }
+            }
+          };
+          
+          const result = await getResultWithRetry();
+          const response = await result.response;
+          const responseText = response.text();
+          
+          // Speak the response
+          speakResponse(responseText, true);
+          
+          // Add AI response to conversation history
+          setConversationHistory([...updatedHistory, { role: "model", parts: responseText }]);
+          
+          // Save interaction to MongoDB
+          try {
+            const interactionSaved = await saveAIInteraction({
+              farmerId: userData?.id || userData?.phone || 'anonymous',
+              query: text,
+              response: responseText,
+              context: {}
+            });
+            
+            if (interactionSaved) {
+              console.log('AI interaction saved successfully to MongoDB');
+            } else {
+              console.warn('Failed to save AI interaction to MongoDB');
+            }
+          } catch (error) {
+            console.error('Error saving interaction to MongoDB:', error);
+          }
+          
+          // Speak the response
+          speakResponse(responseText);
+        } catch (apiError: any) {
+          // Handle 429 rate limit error specifically
+          if (apiError?.status === 429 || apiError?.message?.includes('429')) {
+            console.error('Rate limit exceeded for Gemini API:', apiError);
+            const rateLimitMessage = "I'm currently experiencing high demand. Please wait a moment and try again. You can also try rephrasing your question or check back in a few minutes.";
+            speakResponse(rateLimitMessage, true);
+            setConversationHistory([...updatedHistory, { role: "model", parts: rateLimitMessage }]);
+          } else {
+            // Handle other API errors
+            console.error('Error with Gemini API:', apiError);
+            const errorMessage = "I'm having trouble processing your request right now. Please try again in a moment.";
+            speakResponse(errorMessage);
+            setConversationHistory([...updatedHistory, { role: "model", parts: errorMessage }]);
+          }
+          
+          // Still try to save the interaction to MongoDB
+          try {
+            const interactionSaved = await saveAIInteraction({
+              farmerId: userData?.id || userData?.phone || 'anonymous',
+              query: text,
+              response: "API Error: Rate limit exceeded or service unavailable",
+              context: { error: apiError?.message || 'Unknown error' }
+            });
+            
+            if (interactionSaved) {
+              console.log('AI interaction error saved successfully to MongoDB');
+            } else {
+              console.warn('Failed to save AI interaction error to MongoDB');
+            }
+          } catch (error) {
+            console.error('Error saving interaction error to MongoDB:', error);
+          }
         }
-      }, 1000);
+      } else {
+        const fallbackResponse = "I'm your KrushiAI farming assistant. I can help with crop care, weather updates, pest control, and farming advice. What would you like to know?";
+        
+        // Save fallback response to MongoDB
+        try {
+          const interactionSaved = await saveAIInteraction({
+            farmerId: userData?.id || userData?.phone || 'anonymous',
+            query: text,
+            response: fallbackResponse,
+            context: {}
+          });
+          
+          if (interactionSaved) {
+            console.log('AI interaction saved successfully to MongoDB');
+          } else {
+            console.warn('Failed to save AI interaction to MongoDB');
+          }
+        } catch (error) {
+          console.error('Error saving interaction to MongoDB:', error);
+        }
+        
+        speakResponse(fallbackResponse);
+        setConversationHistory([...updatedHistory, { role: "model", parts: fallbackResponse }]);
+      }
+    } catch (error) {
+      console.error('Error processing voice input:', error);
+      const errorMessage = "Sorry, I encountered an error processing your request. Please try again.";
+      speakResponse(errorMessage);
     }
   };
 
@@ -639,6 +750,19 @@ export default function HomeScreen() {
     } else {
       startListening();
     }
+  };
+
+  const formatTimeUntilReset = (resetTime: number): string => {
+    const now = Date.now();
+    const timeLeft = Math.max(0, resetTime - now);
+    const seconds = Math.ceil(timeLeft / 1000);
+    
+    if (seconds > 60) {
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+    
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
   };
 
   return (
