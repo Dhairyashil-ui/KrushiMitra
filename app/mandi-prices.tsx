@@ -11,7 +11,9 @@ import {
   Modal, 
   Animated,
   Platform,
-  Alert
+  Alert,
+  Dimensions,
+  Easing
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -40,7 +42,12 @@ import {
   GitCompare,
   Pin,
   PinOff,
-  Heart
+  Heart,
+  Zap,
+  Leaf,
+  Sparkles,
+  Activity,
+  Shield
 } from 'lucide-react-native';
 
 interface MandiPrice {
@@ -457,11 +464,152 @@ export default function MandiPricesScreen() {
   const router = useRouter();
   const searchInputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+  // Animation refs for futuristic effects
+  const pulseAnimation = useRef(new Animated.Value(1)).current;
+  const floatAnimation = useRef(new Animated.Value(0)).current;
+  const scaleAnimation = useRef(new Animated.Value(1)).current;
+  const headerScaleAnimation = useRef(new Animated.Value(0.9)).current;
+  const particlePositions = useRef([
+    new Animated.ValueXY({ x: -20, y: -20 }),
+    new Animated.ValueXY({ x: 100, y: 50 }),
+    new Animated.ValueXY({ x: 300, y: -20 }),
+    new Animated.ValueXY({ x: -20, y: 200 }),
+    new Animated.ValueXY({ x: 350, y: 300 }),
+  ]).current;
 
   // Initialize with mock data
   useEffect(() => {
     initializeApp();
+    setupAnimations();
   }, []);
+
+  const setupAnimations = () => {
+    // Start entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerScaleAnimation, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.elastic(1.2),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Gentle pulse effect
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnimation, {
+          toValue: 1.05,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnimation, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Floating animation for particles
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnimation, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnimation, {
+          toValue: 0,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Particle animations
+    Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(particlePositions[0], {
+            toValue: { x: 50, y: 30 },
+            duration: 4000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[0], {
+            toValue: { x: -20, y: -20 },
+            duration: 4000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[1], {
+            toValue: { x: 150, y: 100 },
+            duration: 5000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[1], {
+            toValue: { x: 100, y: 50 },
+            duration: 5000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[2], {
+            toValue: { x: 350, y: 30 },
+            duration: 4500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[2], {
+            toValue: { x: 300, y: -20 },
+            duration: 4500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[3], {
+            toValue: { x: 30, y: 250 },
+            duration: 5500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[3], {
+            toValue: { x: -20, y: 200 },
+            duration: 5500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[4], {
+            toValue: { x: 400, y: 350 },
+            duration: 6000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[4], {
+            toValue: { x: 350, y: 300 },
+            duration: 6000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    ).start();
+  };
 
   // Initialize app with offline support and real-time updates
   const initializeApp = async () => {
@@ -913,77 +1061,77 @@ export default function MandiPricesScreen() {
         style={styles.priceCard}
         onPress={() => router.push(`/commodity-details?commodity=${encodeURIComponent(item.crop)}`)}
       >
-      <LinearGradient
-        colors={['#FFFFFF', '#F8FAFC']}
-        style={styles.priceCardGradient}
-      >
-        <View style={styles.priceCardHeader}>
-          <View style={styles.cropInfo}>
-            <Text style={styles.cropName}>{item.crop}</Text>
-            <View style={styles.locationRow}>
-              <MapPin size={14} color="#6B7280" />
-              <Text style={styles.locationText}>{item.location}</Text>
+        <LinearGradient
+          colors={['#FFFFFF', '#F0FDF4']}
+          style={styles.priceCardGradient}
+        >
+          <View style={styles.priceCardHeader}>
+            <View style={styles.cropInfo}>
+              <Text style={styles.cropName}>{item.crop}</Text>
+              <View style={styles.locationRow}>
+                <MapPin size={16} color="#4CAF50" />
+                <Text style={styles.locationText}>{item.location}</Text>
+              </View>
+            </View>
+            <View style={styles.priceCardActions}>
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryText}>{item.category}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.pinButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  togglePinItem(item);
+                }}
+              >
+                {isPinned ? (
+                  <Pin size={18} color="#4CAF50" />
+                ) : (
+                  <PinOff size={18} color="#6B7280" />
+                )}
+              </TouchableOpacity>
             </View>
           </View>
-          <View style={styles.priceCardActions}>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{item.category}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.pinButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                togglePinItem(item);
-              }}
-            >
-              {isPinned ? (
-                <Pin size={16} color="#3B82F6" />
-              ) : (
-                <PinOff size={16} color="#6B7280" />
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        <View style={styles.priceInfo}>
-          <View style={styles.priceSection}>
-            <Text style={styles.priceValue}>{formatPrice(item.price)}</Text>
-            <Text style={styles.priceUnit}>{item.unit}</Text>
-          </View>
-          
-          {item.change !== undefined && (
-            <View style={styles.changeSection}>
-              <View style={styles.changeRow}>
-                {getPriceChangeIcon(item.change)}
+          <View style={styles.priceInfo}>
+            <View style={styles.priceSection}>
+              <Text style={styles.priceValue}>{formatPrice(item.price)}</Text>
+              <Text style={styles.priceUnit}>{item.unit}</Text>
+            </View>
+            
+            {item.change !== undefined && (
+              <View style={styles.changeSection}>
+                <View style={styles.changeRow}>
+                  {getPriceChangeIcon(item.change)}
+                  <Text style={[
+                    styles.changeText,
+                    { color: getPriceChangeColor(item.change) }
+                  ]}>
+                    {item.change > 0 ? '+' : ''}{formatPrice(Math.abs(item.change))}
+                  </Text>
+                </View>
                 <Text style={[
-                  styles.changeText,
+                  styles.changePercent,
                   { color: getPriceChangeColor(item.change) }
                 ]}>
-                  {item.change > 0 ? '+' : ''}{formatPrice(Math.abs(item.change))}
+                  {item.change > 0 ? '+' : ''}{item.changePercent?.toFixed(1)}%
                 </Text>
               </View>
-              <Text style={[
-                styles.changePercent,
-                { color: getPriceChangeColor(item.change) }
-              ]}>
-                {item.change > 0 ? '+' : ''}{item.changePercent?.toFixed(1)}%
-              </Text>
-            </View>
-          )}
-        </View>
+            )}
+          </View>
 
-        <View style={styles.priceCardFooter}>
-          <View style={styles.dateRow}>
-            <Clock size={12} color="#6B7280" />
-            <Text style={styles.dateText}>{formatDate(item.date)}</Text>
+          <View style={styles.priceCardFooter}>
+            <View style={styles.dateRow}>
+              <Clock size={14} color="#4CAF50" />
+              <Text style={styles.dateText}>{formatDate(item.date)}</Text>
+            </View>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
           </View>
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE</Text>
-          </View>
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
+        </LinearGradient>
+      </TouchableOpacity>
     );
   };
 
@@ -996,98 +1144,112 @@ export default function MandiPricesScreen() {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.filterModal}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Filters</Text>
-            <TouchableOpacity onPress={() => setShowFilters(false)}>
-              <X size={24} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.filterContent}>
-            {/* Category Filter */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Category</Text>
-              <View style={styles.filterOptions}>
-                {CATEGORIES.map(category => (
-                  <TouchableOpacity
-                    key={category}
-                    style={[
-                      styles.filterOption,
-                      filters.category === category && styles.filterOptionActive
-                    ]}
-                    onPress={() => handleFilterChange('category', category)}
-                  >
-                    <Text style={[
-                      styles.filterOptionText,
-                      filters.category === category && styles.filterOptionTextActive
-                    ]}>
-                      {category}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          <LinearGradient
+            colors={['#FFFFFF', '#F0FDF4']}
+            style={styles.filterModal}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filters</Text>
+              <TouchableOpacity onPress={() => setShowFilters(false)}>
+                <X size={24} color="#4CAF50" />
+              </TouchableOpacity>
             </View>
 
-            {/* Price Range Filter */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Price Range</Text>
-              <View style={styles.filterOptions}>
-                {PRICE_RANGES.map((range, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.filterOption,
-                      filters.priceRange.min === range.min && filters.priceRange.max === range.max && styles.filterOptionActive
-                    ]}
-                    onPress={() => handleFilterChange('priceRange', { min: range.min, max: range.max })}
-                  >
-                    <Text style={[
-                      styles.filterOptionText,
-                      filters.priceRange.min === range.min && filters.priceRange.max === range.max && styles.filterOptionTextActive
-                    ]}>
-                      {range.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            <ScrollView style={styles.filterContent}>
+              {/* Category Filter */}
+              <View style={styles.filterSection}>
+                <View style={styles.sectionHeader}>
+                  <Leaf size={20} color="#4CAF50" />
+                  <Text style={styles.filterLabel}>Category</Text>
+                </View>
+                <View style={styles.filterOptions}>
+                  {CATEGORIES.map(category => (
+                    <TouchableOpacity
+                      key={category}
+                      style={[
+                        styles.filterOption,
+                        filters.category === category && styles.filterOptionActive
+                      ]}
+                      onPress={() => handleFilterChange('category', category)}
+                    >
+                      <Text style={[
+                        styles.filterOptionText,
+                        filters.category === category && styles.filterOptionTextActive
+                      ]}>
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
-            </View>
 
-            {/* Location Filter */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Market Location</Text>
-              <View style={styles.filterOptions}>
-                {LOCATIONS.map(location => (
-                  <TouchableOpacity
-                    key={location}
-                    style={[
-                      styles.filterOption,
-                      filters.location === location && styles.filterOptionActive
-                    ]}
-                    onPress={() => handleFilterChange('location', location)}
-                  >
-                    <Text style={[
-                      styles.filterOptionText,
-                      filters.location === location && styles.filterOptionTextActive
-                    ]}>
-                      {location}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              {/* Price Range Filter */}
+              <View style={styles.filterSection}>
+                <View style={styles.sectionHeader}>
+                  <IndianRupee size={20} color="#4CAF50" />
+                  <Text style={styles.filterLabel}>Price Range</Text>
+                </View>
+                <View style={styles.filterOptions}>
+                  {PRICE_RANGES.map((range, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.filterOption,
+                        filters.priceRange.min === range.min && filters.priceRange.max === range.max && styles.filterOptionActive
+                      ]}
+                      onPress={() => handleFilterChange('priceRange', { min: range.min, max: range.max })}
+                    >
+                      <Text style={[
+                        styles.filterOptionText,
+                        filters.priceRange.min === range.min && filters.priceRange.max === range.max && styles.filterOptionTextActive
+                      ]}>
+                        {range.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
-            </View>
-          </ScrollView>
 
-          <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-              <Text style={styles.clearButtonText}>Clear All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.applyButton} 
-              onPress={() => setShowFilters(false)}
-            >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
-            </TouchableOpacity>
-          </View>
+              {/* Location Filter */}
+              <View style={styles.filterSection}>
+                <View style={styles.sectionHeader}>
+                  <MapPin size={20} color="#4CAF50" />
+                  <Text style={styles.filterLabel}>Market Location</Text>
+                </View>
+                <View style={styles.filterOptions}>
+                  {LOCATIONS.map(location => (
+                    <TouchableOpacity
+                      key={location}
+                      style={[
+                        styles.filterOption,
+                        filters.location === location && styles.filterOptionActive
+                      ]}
+                      onPress={() => handleFilterChange('location', location)}
+                    >
+                      <Text style={[
+                        styles.filterOptionText,
+                        filters.location === location && styles.filterOptionTextActive
+                      ]}>
+                        {location}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+                <Text style={styles.clearButtonText}>Clear All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.applyButton} 
+                onPress={() => setShowFilters(false)}
+              >
+                <Text style={styles.applyButtonText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
         </View>
       </View>
     </Modal>
@@ -1160,18 +1322,41 @@ export default function MandiPricesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Animated Background Particles */}
+      {particlePositions.map((position, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            styles.particle,
+            {
+              transform: position.getTranslateTransform(),
+              opacity: fadeAnim,
+              backgroundColor: index % 2 === 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(46, 125, 50, 0.15)',
+              width: 12 + index * 2,
+              height: 12 + index * 2,
+              borderRadius: 6 + index,
+            }
+          ]}
+        />
+      ))}
+
       <OfflineIndicator 
         onSyncPress={refreshPrices}
         showDetails={true}
       />
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        {/* Header */}
-        <View style={styles.header}>
+        {/* Header with enhanced animation */}
+        <Animated.View style={[
+          styles.header,
+          {
+            transform: [{ scale: headerScaleAnimation }],
+          }
+        ]}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <X size={24} color="#1F2937" />
+            <X size={24} color="#4CAF50" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Mandi Prices</Text>
           <View style={styles.headerActions}>
@@ -1179,31 +1364,31 @@ export default function MandiPricesScreen() {
               style={styles.alertButton}
               onPress={() => router.push('/price-alerts')}
             >
-              <Bell size={24} color="#1F2937" />
+              <Bell size={24} color="#4CAF50" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.analyticsButton}
               onPress={() => router.push('/market-analytics')}
             >
-              <BarChart3 size={24} color="#1F2937" />
+              <BarChart3 size={24} color="#4CAF50" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.comparisonButton}
               onPress={() => router.push('/price-comparison')}
             >
-              <GitCompare size={24} color="#1F2937" />
+              <GitCompare size={24} color="#4CAF50" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.pinnedButton}
               onPress={() => router.push('/pinned-items')}
             >
-              <Pin size={24} color="#1F2937" />
+              <Pin size={24} color="#4CAF50" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.alertsButton}
               onPress={() => router.push('/alerts-notifications')}
             >
-              <Bell size={24} color="#1F2937" />
+              <Bell size={24} color="#4CAF50" />
               {unreadNotifications > 0 && (
                 <View style={styles.notificationBadge}>
                   <Text style={styles.notificationBadgeText}>
@@ -1216,15 +1401,15 @@ export default function MandiPricesScreen() {
               style={styles.refreshButton}
               onPress={refreshPrices}
             >
-              <RefreshCw size={24} color="#1F2937" />
+              <RefreshCw size={24} color="#4CAF50" />
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <Search size={20} color="#6B7280" />
+            <Search size={20} color="#4CAF50" />
             <TextInput
               ref={searchInputRef}
               style={styles.searchInput}
@@ -1236,9 +1421,10 @@ export default function MandiPricesScreen() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <X size={20} color="#6B7280" />
+                <X size={20} color="#4CAF50" />
               </TouchableOpacity>
             )}
+            <Zap size={20} color="#4CAF50" style={styles.magicIcon} />
           </View>
 
           {/* Search Suggestions */}
@@ -1250,7 +1436,7 @@ export default function MandiPricesScreen() {
                   style={styles.suggestionItem}
                   onPress={() => handleSuggestionPress(suggestion)}
                 >
-                  <Search size={16} color="#6B7280" />
+                  <Search size={16} color="#4CAF50" />
                   <Text style={styles.suggestionText}>{suggestion}</Text>
                 </TouchableOpacity>
               ))}
@@ -1260,7 +1446,10 @@ export default function MandiPricesScreen() {
 
         {/* Category Sections */}
         <View style={styles.categoryContainer}>
-          <Text style={styles.categoryTitle}>Browse by Category</Text>
+          <View style={styles.sectionHeader}>
+            <Leaf size={20} color="#4CAF50" />
+            <Text style={styles.categoryTitle}>Browse by Category</Text>
+          </View>
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
@@ -1328,7 +1517,7 @@ export default function MandiPricesScreen() {
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
-            <Filter size={16} color="#1F2937" />
+            <Filter size={16} color="#4CAF50" />
             <Text style={styles.filterButtonText}>Filters</Text>
           </TouchableOpacity>
 
@@ -1345,14 +1534,14 @@ export default function MandiPricesScreen() {
               <Text style={styles.sortButtonText}>
                 Sort: {sortBy === 'price' ? 'Price' : sortBy === 'name' ? 'Name' : sortBy === 'popularity' ? 'Popularity' : 'Date'}
               </Text>
-              <ChevronDown size={16} color="#6B7280" />
+              <ChevronDown size={16} color="#4CAF50" />
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.sortOrderButton}
               onPress={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
             >
-              {sortOrder === 'asc' ? <ChevronUp size={16} color="#6B7280" /> : <ChevronDown size={16} color="#6B7280" />}
+              {sortOrder === 'asc' ? <ChevronUp size={16} color="#4CAF50" /> : <ChevronDown size={16} color="#4CAF50" />}
             </TouchableOpacity>
           </View>
         </View>
@@ -1367,7 +1556,7 @@ export default function MandiPricesScreen() {
               <View style={styles.activeFilter}>
                 <Text style={styles.activeFilterText}>{filters.category}</Text>
                 <TouchableOpacity onPress={() => handleFilterChange('category', 'All')}>
-                  <X size={12} color="#6B7280" />
+                  <X size={12} color="#4CAF50" />
                 </TouchableOpacity>
               </View>
             )}
@@ -1375,7 +1564,7 @@ export default function MandiPricesScreen() {
               <View style={styles.activeFilter}>
                 <Text style={styles.activeFilterText}>{filters.location}</Text>
                 <TouchableOpacity onPress={() => handleFilterChange('location', 'All')}>
-                  <X size={12} color="#6B7280" />
+                  <X size={12} color="#4CAF50" />
                 </TouchableOpacity>
               </View>
             )}
@@ -1393,6 +1582,7 @@ export default function MandiPricesScreen() {
           onRefresh={refreshPrices}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
+              <Activity size={48} color="#9CA3AF" />
               <Text style={styles.emptyText}>No commodities found</Text>
               <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
             </View>
@@ -1411,6 +1601,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
+  particle: {
+    position: 'absolute',
+    zIndex: 0,
+  },
   content: {
     flex: 1,
   },
@@ -1423,19 +1617,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F8E9',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#1F2937',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   headerActions: {
     flexDirection: 'row',
@@ -1445,42 +1650,67 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F8E9',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   analyticsButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F8E9',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   comparisonButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F8E9',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   pinnedButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F8E9',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   alertsButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F8E9',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   notificationBadge: {
     position: 'absolute',
@@ -1502,9 +1732,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F8E9',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -1515,25 +1750,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F0FDF4',
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderWidth: 1,
     borderColor: '#BBF7D0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   searchInput: {
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
     color: '#1F2937',
+    fontWeight: '500',
+  },
+  magicIcon: {
+    marginLeft: 12,
   },
   suggestionsContainer: {
     position: 'absolute',
-    top: 60,
+    top: 65,
     left: 20,
     right: 20,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -1547,7 +1791,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
@@ -1555,334 +1799,15 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     color: '#1F2937',
-  },
-  controlsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  filterButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1F2937',
-  },
-  sortContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  sortButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1F2937',
-    marginRight: 4,
-  },
-  sortOrderButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  resultsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#F9FAFB',
-  },
-  resultsText: {
-    fontSize: 14,
-    color: '#6B7280',
     fontWeight: '500',
   },
-  activeFilters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  activeFilter: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0F2FE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: 4,
-  },
-  activeFilterText: {
-    fontSize: 12,
-    color: '#0369A1',
-    marginRight: 4,
-  },
-  priceList: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  priceCard: {
+    gap: 10,
     marginBottom: 16,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  priceCardGradient: {
-    padding: 20,
-    borderRadius: 16,
-  },
-  priceCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  priceCardActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  pinButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cropInfo: {
-    flex: 1,
-  },
-  cropName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  locationText: {
-    marginLeft: 4,
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  categoryBadge: {
-    backgroundColor: '#E0F2FE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  categoryText: {
-    fontSize: 12,
-    color: '#0369A1',
-    fontWeight: '500',
-  },
-  priceInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  priceSection: {
-    flex: 1,
-  },
-  priceValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 2,
-  },
-  priceUnit: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  changeSection: {
-    alignItems: 'flex-end',
-  },
-  changeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  changeText: {
-    marginLeft: 4,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  changePercent: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  priceCardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dateText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  liveIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#EF4444',
-    marginRight: 4,
-  },
-  liveText: {
-    fontSize: 10,
-    color: '#EF4444',
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  filterModal: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  filterContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  filterSection: {
-    marginBottom: 24,
-  },
-  filterLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  filterOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  filterOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  filterOptionActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-  },
-  filterOptionText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  filterOptionTextActive: {
-    color: '#FFFFFF',
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    gap: 12,
-  },
-  clearButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-  },
-  clearButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  applyButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#3B82F6',
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  // Category Sections Styles
   categoryContainer: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 20,
@@ -1890,11 +1815,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   categoryTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1F2937',
-    marginBottom: 16,
-    paddingHorizontal: 20,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   categoryScroll: {
     paddingHorizontal: 20,
@@ -1919,9 +1843,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   categoryCardActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-    shadowColor: '#3B82F6',
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+    shadowColor: '#4CAF50',
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
@@ -1936,6 +1860,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     marginBottom: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   categoryNameActive: {
     color: '#FFFFFF',
@@ -1949,7 +1874,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -1962,7 +1887,7 @@ const styles = StyleSheet.create({
   },
   subcategoryItem: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
@@ -1973,10 +1898,398 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     fontWeight: '500',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   subcategoryTextActive: {
-    color: '#3B82F6',
+    color: '#4CAF50',
     fontWeight: '600',
+  },
+  controlsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F8E9',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  filterButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2E7D32',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F8E9',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginRight: 8,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sortButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2E7D32',
+    marginRight: 4,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  sortOrderButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F8E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  resultsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+  },
+  resultsText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  activeFilters: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  activeFilter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  activeFilterText: {
+    fontSize: 12,
+    color: '#2E7D32',
+    fontWeight: '600',
+    marginRight: 6,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  priceList: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  priceCard: {
+    marginBottom: 20,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  priceCardGradient: {
+    padding: 24,
+    borderRadius: 20,
+  },
+  priceCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  priceCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  pinButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F8E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cropInfo: {
+    flex: 1,
+  },
+  cropName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 6,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  categoryBadge: {
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  categoryText: {
+    fontSize: 12,
+    color: '#2E7D32',
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  priceInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  priceSection: {
+    flex: 1,
+  },
+  priceValue: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginBottom: 4,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  priceUnit: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  changeSection: {
+    alignItems: 'flex-end',
+  },
+  changeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  changeText: {
+    marginLeft: 6,
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  changePercent: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  priceCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateText: {
+    marginLeft: 6,
+    fontSize: 12,
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    marginRight: 6,
+  },
+  liveText: {
+    fontSize: 12,
+    color: '#EF4444',
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 80,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  filterModal: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  filterContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  filterSection: {
+    marginBottom: 24,
+  },
+  filterLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 16,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  filterOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  filterOptionActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  filterOptionTextActive: {
+    color: '#FFFFFF',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    gap: 12,
+  },
+  clearButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  applyButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  applyButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   // Pin Modal Styles
   pinModal: {
@@ -1997,10 +2310,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   pinItemName: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   pinItemLocation: {
     flexDirection: 'row',
@@ -2008,53 +2322,62 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pinItemLocationText: {
-    marginLeft: 4,
-    fontSize: 14,
+    marginLeft: 6,
+    fontSize: 16,
     color: '#6B7280',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   pinItemPrice: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '800',
     color: '#1F2937',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   categorySelection: {
     marginBottom: 16,
   },
   categorySelectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#1F2937',
-    marginBottom: 12,
+    marginBottom: 16,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
   },
   categoryOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 16,
     backgroundColor: '#F9FAFB',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#E5E7EB',
     minWidth: '45%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   categoryOptionIcon: {
-    fontSize: 20,
-    marginRight: 8,
+    fontSize: 24,
+    marginRight: 10,
   },
   categoryOptionName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 16,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
   },
@@ -2062,5 +2385,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#6B7280',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
 });

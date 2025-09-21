@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Platform, Alert, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Platform, Alert, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,7 +13,14 @@ import {
   Clock,
   AlertCircle,
   Bot,
-  Sparkles
+  Sparkles,
+  Leaf,
+  Zap,
+  TrendingUp,
+  Star,
+  Globe,
+  Calendar,
+  MapPin
 } from 'lucide-react-native';
 
 
@@ -103,9 +110,142 @@ export default function GovernmentSchemesScreen() {
   const typingText = "Based on your profile, I recommend applying for the PM Kisan Samman Nidhi scheme. This provides direct income support of ₹6,000 per year to small and marginal farmers like yourself.";
   const utteranceRef = useRef<any>(null);
   const lastSpokenIndex = useRef(0);
+  
+  // Animation refs for futuristic effects
+  const pulseAnimation = useRef(new Animated.Value(1)).current;
+  const floatAnimation = useRef(new Animated.Value(0)).current;
+  const scaleAnimation = useRef(new Animated.Value(1)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const particlePositions = useRef([
+    new Animated.ValueXY({ x: -20, y: -20 }),
+    new Animated.ValueXY({ x: 100, y: 50 }),
+    new Animated.ValueXY({ x: 300, y: -20 }),
+    new Animated.ValueXY({ x: -20, y: 200 }),
+    new Animated.ValueXY({ x: 350, y: 300 }),
+  ]).current;
 
   useEffect(() => {
     loadUserData();
+    
+    // Start entrance animations
+    Animated.parallel([
+      Animated.timing(scaleAnimation, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.elastic(1.2),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Gentle pulse effect
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnimation, {
+          toValue: 1.05,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnimation, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Floating animation for particles
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnimation, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnimation, {
+          toValue: 0,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Particle animations
+    Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(particlePositions[0], {
+            toValue: { x: 50, y: 30 },
+            duration: 4000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[0], {
+            toValue: { x: -20, y: -20 },
+            duration: 4000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[1], {
+            toValue: { x: 150, y: 100 },
+            duration: 5000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[1], {
+            toValue: { x: 100, y: 50 },
+            duration: 5000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[2], {
+            toValue: { x: 350, y: 30 },
+            duration: 4500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[2], {
+            toValue: { x: 300, y: -20 },
+            duration: 4500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[3], {
+            toValue: { x: 30, y: 250 },
+            duration: 5500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[3], {
+            toValue: { x: -20, y: 200 },
+            duration: 5500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[4], {
+            toValue: { x: 400, y: 350 },
+            duration: 6000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[4], {
+            toValue: { x: 350, y: 300 },
+            duration: 6000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    ).start();
   }, []);
 
   useEffect(() => {
@@ -286,19 +426,99 @@ export default function GovernmentSchemesScreen() {
     };
   }, []);
 
+  // Animated button component for apply buttons
+  const AnimatedButton = ({ onPress, children, style }: any) => {
+    const buttonScale = useRef(new Animated.Value(1)).current;
+    
+    const handlePressIn = () => {
+      Animated.spring(buttonScale, {
+        toValue: 0.95,
+        useNativeDriver: true,
+        friction: 5,
+      }).start();
+    };
+    
+    const handlePressOut = () => {
+      Animated.spring(buttonScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 5,
+      }).start();
+    };
+    
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <Animated.View style={[style, { transform: [{ scale: buttonScale }] }]}>
+          {children}
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Add glow effect to buttons on press
+  const handlePressIn = (animatedValue: Animated.Value) => {
+    Animated.timing(animatedValue, {
+      toValue: 0.95,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = (animatedValue: Animated.Value) => {
+    Animated.timing(animatedValue, {
+      toValue: 1,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Animated Background Particles */}
+      {particlePositions.map((position, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            styles.particle,
+            {
+              transform: position.getTranslateTransform(),
+              opacity: pulseAnimation,
+              backgroundColor: index % 2 === 0 ? 'rgba(46, 125, 50, 0.2)' : 'rgba(76, 175, 80, 0.15)',
+              width: 12 + index * 2,
+              height: 12 + index * 2,
+              borderRadius: 6 + index,
+            }
+          ]}
+        />
+      ))}
+      
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <LinearGradient
-          colors={['#2E7D32', '#4CAF50']}
-          style={styles.header as any}
-        >
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Government Schemes</Text>
-            <Text style={styles.headerSubtitle}>Access subsidies and benefits for farmers</Text>
-          </View>
-        </LinearGradient>
+        {/* Header with enhanced animation */}
+        <Animated.View style={{ transform: [{ scale: scaleAnimation }] }}>
+          <LinearGradient
+            colors={['#2E7D32', '#4CAF50', '#81C784']}
+            style={styles.header as any}
+          >
+            <View style={styles.headerContent}>
+              <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
+                <Leaf size={40} color="#FFFFFF" style={styles.headerIcon} />
+              </Animated.View>
+              <Text style={styles.headerTitle}>Government Schemes</Text>
+              <Text style={styles.headerSubtitle}>Access subsidies and benefits for farmers</Text>
+              <View style={styles.badgeContainer}>
+                <View style={styles.badge}>
+                  <Star size={14} color="#FFD700" />
+                  <Text style={styles.badgeText}>AI Powered</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+        </Animated.View>
 
         {/* Search and Filter */}
         <View style={styles.searchSection}>
@@ -310,6 +530,7 @@ export default function GovernmentSchemesScreen() {
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
+            <Zap size={20} color="#4CAF50" style={styles.magicIcon} />
           </View>
           
           <TouchableOpacity style={styles.filterButton}>
@@ -350,6 +571,7 @@ export default function GovernmentSchemesScreen() {
             <View style={styles.sectionHeader}>
               <Bot size={20} color="#2E7D32" />
               <Text style={styles.sectionTitle}>KrushiAI Assistant</Text>
+              <Sparkles size={16} color="#FFD700" />
             </View>
             
             <View style={styles.demoCard}>
@@ -373,6 +595,10 @@ export default function GovernmentSchemesScreen() {
                         <Text style={styles.statusText}>Thinking...</Text>
                       )}
                     </View>
+                  </View>
+                  <View style={styles.aiBadge}>
+                    <TrendingUp size={14} color="#FFFFFF" />
+                    <Text style={styles.aiBadgeText}>Smart</Text>
                   </View>
                 </View>
                 
@@ -402,6 +628,7 @@ export default function GovernmentSchemesScreen() {
             <View style={styles.sectionHeader}>
               <Bot size={20} color="#2E7D32" />
               <Text style={styles.sectionTitle}>AI Recommendations</Text>
+              <Sparkles size={16} color="#FFD700" />
             </View>
             
             {aiRecommendations.length > 0 ? (
@@ -426,24 +653,28 @@ export default function GovernmentSchemesScreen() {
                             <Text style={styles.matchText}>{rec.match} match</Text>
                           </View>
                         </View>
+                        <View style={styles.priorityBadge}>
+                          <Text style={styles.priorityBadgeText}>{rec.priority}</Text>
+                        </View>
                       </View>
                       
                       <Text style={styles.reasonText}>{rec.reason}</Text>
                       
-                      <View style={styles.priorityContainer}>
-                        <Text style={styles.priorityText}>Priority: {rec.priority}</Text>
-                      </View>
-                      
-                      <TouchableOpacity style={styles.applyButton}>
+                      <AnimatedButton 
+                        onPress={() => console.log('Apply to recommendation')}
+                        style={styles.applyButton}
+                      >
                         <Text style={styles.applyButtonText}>Apply Now</Text>
                         <ChevronRight size={16} color="#FFFFFF" />
-                      </TouchableOpacity>
+                      </AnimatedButton>
+                      
                     </LinearGradient>
                   </View>
                 );
               })
             ) : (
               <View style={styles.emptyState}>
+                <AlertCircle size={48} color="#9CA3AF" />
                 <Text style={styles.emptyStateText}>No AI recommendations available</Text>
               </View>
             )}
@@ -455,55 +686,73 @@ export default function GovernmentSchemesScreen() {
           <View style={styles.sectionHeader}>
             <Award size={20} color="#2E7D32" />
             <Text style={styles.sectionTitle}>Available Schemes</Text>
+            <Globe size={16} color="#4CAF50" />
           </View>
           
           {filteredSchemes.length === 0 ? (
             <View style={styles.emptyState}>
+              <Search size={48} color="#9CA3AF" />
               <Text style={styles.emptyStateText}>No schemes found matching your criteria</Text>
             </View>
           ) : (
             filteredSchemes.map((scheme) => (
-              <View key={scheme.id} style={styles.schemeCard}>
-                <View style={styles.schemeHeader}>
-                  <Text style={styles.schemeIcon}>{scheme.icon}</Text>
-                  <View style={styles.schemeInfo}>
-                    <Text style={styles.schemeName}>{scheme.name}</Text>
-                    <Text style={styles.schemeDescription}>{scheme.description}</Text>
-                  </View>
-                </View>
-                
-                <View style={styles.schemeDetails}>
-                  <View style={styles.detailRow}>
-                    <Users size={16} color="#6B7280" />
-                    <Text style={styles.detailText}>{scheme.eligibility}</Text>
+              <TouchableOpacity 
+                key={scheme.id} 
+                style={styles.schemeCard}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={['#FFFFFF', '#F0FDF4']}
+                  style={styles.schemeGradient}
+                >
+                  <View style={styles.schemeHeader}>
+                    <View style={styles.schemeIconContainer}>
+                      <Text style={styles.schemeIcon}>{scheme.icon}</Text>
+                    </View>
+                    <View style={styles.schemeInfo}>
+                      <Text style={styles.schemeName}>{scheme.name}</Text>
+                      <Text style={styles.schemeDescription}>{scheme.description}</Text>
+                    </View>
                   </View>
                   
-                  <View style={styles.detailRow}>
-                    <FileText size={16} color="#6B7280" />
-                    <Text style={styles.detailText}>Action: {scheme.action}</Text>
+                  <View style={styles.schemeDetails}>
+                    <View style={styles.detailRow}>
+                      <Users size={16} color="#6B7280" />
+                      <Text style={styles.detailText}>{scheme.eligibility}</Text>
+                    </View>
+                    
+                    <View style={styles.detailRow}>
+                      <FileText size={16} color="#6B7280" />
+                      <Text style={styles.detailText}>Action: {scheme.action}</Text>
+                    </View>
+                    
+                    <View style={styles.detailRow}>
+                      <MapPin size={16} color="#6B7280" />
+                      <Text style={styles.detailText}>Category: {scheme.category}</Text>
+                    </View>
+                    
+                    <View style={styles.deadlineRow}>
+                      <Calendar size={16} color={scheme.deadline === 'Ongoing' ? '#4CAF50' : '#FF9800'} />
+                      <Text style={[
+                        styles.deadlineText,
+                        scheme.deadline === 'Ongoing' ? styles.deadlineOngoing : styles.deadlinePending
+                      ]}>
+                        {scheme.deadline === 'Ongoing' ? 'Ongoing' : `Deadline: ${scheme.deadline}`}
+                      </Text>
+                      {scheme.deadline !== 'Ongoing' && (
+                        <View style={styles.deadlineBadge}>
+                          <Text style={styles.deadlineBadgeText}>!</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                   
-                  <View style={styles.deadlineRow}>
-                    <Clock size={16} color={scheme.deadline === 'Ongoing' ? '#4CAF50' : '#FF9800'} />
-                    <Text style={[
-                      styles.deadlineText,
-                      scheme.deadline === 'Ongoing' ? styles.deadlineOngoing : styles.deadlinePending
-                    ]}>
-                      {scheme.deadline === 'Ongoing' ? 'Ongoing' : `Deadline: ${scheme.deadline}`}
-                    </Text>
-                    {scheme.deadline !== 'Ongoing' && (
-                      <View style={styles.deadlineBadge}>
-                        <Text style={styles.deadlineBadgeText}>!</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-                
-                <TouchableOpacity style={styles.applyButton}>
-                  <Text style={styles.applyButtonText}>Apply Now</Text>
-                  <ChevronRight size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
+                  <TouchableOpacity style={styles.applyButton}>
+                    <Text style={styles.applyButtonText}>Apply Now</Text>
+                    <ChevronRight size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </LinearGradient>
+              </TouchableOpacity>
             ))
           )}
         </View>
@@ -517,71 +766,119 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F0FDF4',
   },
+  particle: {
+    position: 'absolute',
+    zIndex: 0,
+  },
   scrollView: {
     flex: 1,
   },
   header: {
     padding: 24,
     paddingTop: Platform.OS === 'ios' ? 44 : 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
   },
   headerContent: {
     alignItems: 'center',
   },
+  headerIcon: {
+    marginBottom: 12,
+  },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '800',
     color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   headerSubtitle: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     lineHeight: 22,
+    marginBottom: 12,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFD700',
   },
   searchSection: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 12,
     marginBottom: 16,
+    marginTop: 16,
   },
   searchContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 12,
+  },
+  magicIcon: {
+    marginLeft: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#1F2937',
+    fontWeight: '500',
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2E7D32',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     gap: 6,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   filterButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   categoryScroll: {
@@ -593,19 +890,26 @@ const styles = StyleSheet.create({
   },
   categoryButton: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 2,
     borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   categoryButtonActive: {
     backgroundColor: '#2E7D32',
     borderColor: '#2E7D32',
+    shadowColor: '#2E7D32',
+    shadowOpacity: 0.2,
   },
   categoryButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#6B7280',
   },
   categoryButtonTextActive: {
@@ -614,128 +918,166 @@ const styles = StyleSheet.create({
   aiSection: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#1F2937',
   },
   demoCard: {
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.2)',
   },
   demoGradient: {
-    padding: 20,
-    borderRadius: 16,
+    padding: 24,
+    borderRadius: 20,
   },
   demoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+    gap: 16,
+    marginBottom: 20,
   },
   aiIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   demoInfo: {
     flex: 1,
   },
   demoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#1F2937',
   },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   speakingIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#4CAF50',
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6B7280',
+    fontWeight: '600',
+  },
+  aiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  aiBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   demoContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    minHeight: 60,
   },
   demoText: {
     fontSize: 16,
     color: '#1F2937',
     lineHeight: 24,
     flex: 1,
+    fontWeight: '500',
   },
   cursorContainer: {
-    width: 2,
-    height: 20,
+    width: 3,
+    height: 24,
     backgroundColor: '#2E7D32',
-    marginLeft: 2,
+    marginLeft: 4,
     marginTop: 2,
   },
   cursor: {
     color: '#2E7D32',
+    fontWeight: 'bold',
   },
   closeDemoButton: {
     alignSelf: 'flex-end',
     backgroundColor: 'rgba(46, 125, 50, 0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   closeDemoText: {
     color: '#2E7D32',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 14,
   },
   recommendationCard: {
-    marginBottom: 16,
-    borderRadius: 16,
+    marginBottom: 20,
+    borderRadius: 20,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   recommendationGradient: {
-    padding: 20,
-    borderRadius: 16,
+    padding: 24,
+    borderRadius: 20,
   },
   recommendationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    gap: 16,
+    marginBottom: 16,
   },
   schemeIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   schemeIcon: {
-    fontSize: 20,
+    fontSize: 24,
   },
   recommendationInfo: {
     flex: 1,
@@ -743,91 +1085,115 @@ const styles = StyleSheet.create({
   matchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    marginTop: 4,
   },
   matchText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#2E7D32',
   },
   reasonText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#1F2937',
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 22,
+    marginBottom: 20,
+    fontWeight: '500',
   },
-  priorityContainer: {
-    marginBottom: 16,
+  priorityBadge: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  priorityText: {
+  priorityBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#4CAF50',
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  applyButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#2E7D32',
+    borderRadius: 16,
+    paddingVertical: 16,
+    gap: 8,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  applyButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   schemesSection: {
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   schemeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    marginBottom: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  schemeGradient: {
+    padding: 24,
+    borderRadius: 20,
   },
   schemeHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 16,
+    gap: 16,
+    marginBottom: 20,
   },
   schemeInfo: {
     flex: 1,
   },
   schemeName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#1F2937',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   schemeDescription: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6B7280',
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: '500',
   },
   schemeDetails: {
-    gap: 12,
-    marginBottom: 20,
+    gap: 16,
+    marginBottom: 24,
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
   },
   detailText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: '#1F2937',
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: '500',
   },
   deadlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   deadlineText: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
   deadlineOngoing: {
     color: '#4CAF50',
@@ -837,41 +1203,34 @@ const styles = StyleSheet.create({
   },
   deadlineBadge: {
     backgroundColor: '#FF9800',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   deadlineBadgeText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
-  },
-  applyButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#2E7D32',
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 8,
-  },
-  applyButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   emptyState: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 40,
+    borderRadius: 20,
+    padding: 48,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   emptyStateText: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#6B7280',
     textAlign: 'center',
+    marginTop: 16,
+    fontWeight: '500',
   },
 });

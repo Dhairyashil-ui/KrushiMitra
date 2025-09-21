@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Users, Bot, Calendar, User } from 'lucide-react-native';
+import { Home, Users, Bot, Calendar, User, Newspaper } from 'lucide-react-native';
 import { View, Platform } from 'react-native';
 
 export default function TabLayout() {
@@ -95,6 +95,28 @@ export default function TabLayout() {
                 size={focused ? 28 : 26} 
                 color={focused ? '#FFFFFF' : '#2E7D32'}
                 strokeWidth={2.5}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="farming-news"
+        options={{
+          tabBarIcon: ({ size, color, focused }) => (
+            <View style={{
+              padding: 12,
+              borderRadius: 16,
+              backgroundColor: focused ? 'rgba(46, 125, 50, 0.12)' : 'transparent',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: 48,
+              minHeight: 48,
+            }}>
+              <Newspaper 
+                size={focused ? 26 : 24} 
+                color={focused ? '#2E7D32' : '#6B7280'}
+                strokeWidth={focused ? 2.5 : 2}
               />
             </View>
           ),

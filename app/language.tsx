@@ -9,13 +9,17 @@ import {
   Platform,
   Image,
   Animated,
+  Easing,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Wheat, CheckCircle } from 'lucide-react-native';
+import { Wheat, CheckCircle, ArrowLeft, Sparkles, Mic, MicOff } from 'lucide-react-native';
 import PageTransition from '@/components/PageTransition';
 import { replaceWithTransition } from '@/src/utils/navigation';
-
+// Import speech recognition and text-to-speech libraries
+import Voice from '@react-native-voice/voice';
+import * as Speech from 'expo-speech';
 
 const languages = [
   { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം' },
@@ -25,16 +29,176 @@ const languages = [
 
 export default function LanguageScreen() {
   const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
   const fadeAnimation = useRef(new Animated.Value(0)).current;
+  const scaleAnimation = useRef(new Animated.Value(0.3)).current;
+  const pulseAnimation = useRef(new Animated.Value(1)).current;
+  const floatAnimation = useRef(new Animated.Value(0)).current;
+  const particlesAnimation = useRef(new Animated.Value(0)).current;
   const [transitioning, setTransitioning] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  // Cross-platform error handling function
+  const showError = (msg: string) => {
+    if (Platform.OS === 'web') {
+      console.error(msg);
+    } else {
+      Alert.alert("Error", msg);
+    }
+  };
+
+  // Particle positions for background effect
+  const particlePositions = useRef([
+    new Animated.ValueXY({ x: -20, y: -20 }),
+    new Animated.ValueXY({ x: 100, y: 50 }),
+    new Animated.ValueXY({ x: 300, y: -20 }),
+    new Animated.ValueXY({ x: -20, y: 200 }),
+    new Animated.ValueXY({ x: 350, y: 300 }),
+  ]).current;
 
   useEffect(() => {
-    // Fade in animation when screen loads
-    Animated.timing(fadeAnimation, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    // Start entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnimation, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnimation, {
+        toValue: 1,
+        duration: 1200,
+        easing: Easing.elastic(1.3),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Gentle pulse effect for logo after entrance
+    setTimeout(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnimation, {
+            toValue: 1.05,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnimation, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }, 1200);
+
+    // Floating animation for particles
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnimation, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnimation, {
+          toValue: 0,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Particle animations
+    Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(particlePositions[0], {
+            toValue: { x: 50, y: 30 },
+            duration: 4000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[0], {
+            toValue: { x: -20, y: -20 },
+            duration: 4000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[1], {
+            toValue: { x: 150, y: 100 },
+            duration: 5000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[1], {
+            toValue: { x: 100, y: 50 },
+            duration: 5000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[2], {
+            toValue: { x: 350, y: 30 },
+            duration: 4500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[2], {
+            toValue: { x: 300, y: -20 },
+            duration: 4500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[3], {
+            toValue: { x: 30, y: 250 },
+            duration: 5500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[3], {
+            toValue: { x: -20, y: 200 },
+            duration: 5500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(particlePositions[4], {
+            toValue: { x: 400, y: 350 },
+            duration: 6000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particlePositions[4], {
+            toValue: { x: 350, y: 300 },
+            duration: 6000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    ).start();
+
+    // Initialize speech recognition
+    initializeSpeechRecognition();
+
+    // Start voice prompt after animations
+    setTimeout(() => {
+      speakWelcomeAndPrompt();
+    }, 1000);
+
+    // Cleanup function
+    return () => {
+      if (Platform.OS !== 'web') {
+        Voice.destroy().then(Voice.removeAllListeners);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -43,8 +207,240 @@ export default function LanguageScreen() {
     }
   }, [transitioning]);
 
+  const initializeSpeechRecognition = () => {
+    if (Platform.OS === 'web') {
+      // Web implementation
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-US';
+        
+        recognitionRef.current.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript.toLowerCase().trim();
+          setIsListening(false);
+          handleVoiceInput(transcript);
+        };
+        
+        recognitionRef.current.onerror = (event: any) => {
+          console.error('Speech recognition error', event.error);
+          setIsListening(false);
+          showError('There was an error with speech recognition. Please try again.');
+        };
+        
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+        };
+      } else {
+        console.warn('Speech recognition not supported in this browser');
+      }
+    } else {
+      // Mobile implementation using react-native-voice
+      Voice.onSpeechStart = () => {
+        console.log('Speech started');
+        setIsListening(true);
+      };
+      
+      Voice.onSpeechEnd = () => {
+        console.log('Speech ended');
+        setIsListening(false);
+      };
+      
+      Voice.onSpeechResults = (event: any) => {
+        console.log('Speech results:', event.value);
+        if (event.value && event.value.length > 0) {
+          const transcript = event.value[0].toLowerCase().trim();
+          handleVoiceInput(transcript);
+        }
+      };
+      
+      Voice.onSpeechError = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        showError('There was an error with speech recognition. Please try again.');
+      };
+
+    }
+  };
+
+  const speakWelcomeAndPrompt = () => {
+    console.log('Attempting to speak welcome message');
+    
+    const message = "Welcome to KrushiMitra. What language do you prefer?";
+    
+    if (Platform.OS === 'web') {
+      // Web implementation
+      if ('speechSynthesis' in window) {
+        const synth = window.speechSynthesis;
+        
+        // Cancel any ongoing speech
+        synth.cancel();
+        
+        // Try different voices
+        const voices = synth.getVoices();
+        const englishVoices = voices.filter(voice => voice.lang.includes('en'));
+        const preferredVoice = englishVoices.find(voice => voice.default) || englishVoices[0] || voices[0];
+        
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.rate = 0.9; // Slightly slower for clarity
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+        
+        utterance.onstart = () => {
+          console.log('Speech synthesis started with voice:', preferredVoice ? preferredVoice.name : 'default');
+        };
+        
+        utterance.onend = () => {
+          console.log('Speech synthesis finished');
+          // Add a small delay before starting listening
+          setTimeout(() => {
+            startListening();
+          }, 500); // 500ms delay
+        };
+        
+        utterance.onerror = (event) => {
+          console.error('Speech synthesis error:', event);
+          // Still start listening even if speech fails, with delay
+          setTimeout(() => {
+            startListening();
+          }, 500); // 500ms delay
+        };
+        
+        // Try speaking immediately
+        try {
+          synth.speak(utterance);
+        } catch (error) {
+          console.error('Error speaking:', error);
+          // Fallback: start listening directly with delay
+          setTimeout(() => {
+            startListening();
+          }, 500); // 500ms delay
+        }
+      } else {
+        console.warn('Speech synthesis not supported in this browser');
+        // Start listening immediately if speech is not supported, with delay
+        setTimeout(() => {
+          startListening();
+        }, 500); // 500ms delay
+      }
+    } else {
+      // Mobile implementation using expo-speech
+      console.log('Using expo-speech for mobile');
+      
+      const options = {
+        language: 'en-US',
+        pitch: 1.0,
+        rate: 0.9,
+        volume: 1.0,
+        onDone: () => {
+          console.log('Speech synthesis finished');
+          // Add a small delay before starting listening
+          setTimeout(() => {
+            startListening();
+          }, 500); // 500ms delay
+        },
+        onError: (error: any) => {
+          console.error('Speech synthesis error:', error);
+          // Add delay even if speech fails
+          setTimeout(() => {
+            startListening();
+          }, 500); // 500ms delay
+        }
+      };
+      
+      Speech.speak(message, options);
+    }
+  };
+
+  const startListening = () => {
+    if (Platform.OS === 'web') {
+      // Web implementation
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+          setIsListening(true);
+        } catch (error) {
+          console.error('Error starting speech recognition:', error);
+          showError('Could not start voice recognition. Please ensure your browser supports it and you have given microphone permissions.');
+        }
+      } else {
+        showError('Voice recognition is only available on web platform.');
+      }
+    } else {
+      // Mobile implementation using react-native-voice
+      console.log('Starting voice recognition on mobile');
+      try {
+        Voice.start('en-US');
+      } catch (error) {
+        console.error('Error starting speech recognition:', error);
+        // On mobile, we might need to handle permissions differently
+        showError('Please allow microphone access in your device settings to use voice recognition.');
+      }
+    }
+  };
+
+  const stopListening = () => {
+    if (Platform.OS === 'web') {
+      // Web implementation
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+      }
+    } else {
+      // Mobile implementation using react-native-voice
+      Voice.stop();
+      setIsListening(false);
+    }
+  };
+
+  const handleVoiceInput = (text: string) => {
+    console.log('Voice input received:', text);
+    
+    // Match voice input to languages
+    let languageCode = '';
+    if (text.includes('hindi') || text.includes('हिंदी')) {
+      languageCode = 'hi';
+    } else if (text.includes('malayalam') || text.includes('മലയാളം')) {
+      languageCode = 'ml';
+    } else if (text.includes('english')) {
+      languageCode = 'en';
+    }
+    
+    // If a valid language was detected
+    if (languageCode) {
+      setSelectedLanguage(languageCode);
+      setShowWelcome(false);
+      // Automatically continue after a 2-second delay
+      setTimeout(() => {
+        autoContinue(languageCode);
+      }, 2000);
+    } else {
+      // Do nothing for unrecognized input
+      console.log('Unrecognized language input');
+    }
+  };
+
   const handleLanguageSelect = (languageCode: string) => {
     setSelectedLanguage(languageCode);
+  };
+
+  const autoContinue = async (languageCode: string) => {
+    if (!languageCode) return;
+    
+    try {
+      await AsyncStorage.setItem('selectedLanguage', languageCode);
+      
+      // Trigger transition before navigation
+      setTransitioning(true);
+    } catch (error) {
+      console.error('Error saving language preference:', error);
+    }
   };
 
   const handleContinue = async () => {
@@ -63,29 +459,114 @@ export default function LanguageScreen() {
   return (
     <PageTransition isActive={!transitioning} type="slide">
       <SafeAreaView style={styles.container}>
+        {/* Animated Background Particles */}
+        {particlePositions.map((position, index) => (
+          <Animated.View
+            key={index}
+            style={[styles.particle, {
+              transform: position.getTranslateTransform(),
+              opacity: fadeAnimation,
+              backgroundColor: index % 2 === 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(46, 125, 50, 0.15)',
+              width: 12 + index * 2,
+              height: 12 + index * 2,
+              borderRadius: 6 + index,
+            }]}
+          />
+        ))}
+
         <LinearGradient
           colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
           style={styles.backgroundGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0.3 }}
         >
-          {/* Top Section - Logo */}
-          <View style={styles.topSection}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoWrapper}>
-                <Image 
-                  source={require('./logoai.jpg')} 
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
-              </View>
+          {/* Top Navigation */}
+          <View style={styles.topNavigation}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => replaceWithTransition('/')}
+            >
+              <ArrowLeft size={24} color="#4CAF50" />
+            </TouchableOpacity>
+            
+            <View style={styles.topCenter}>
+              <Text style={styles.topTitle}>Language</Text>
             </View>
+            
+            {/* Microphone Button */}
+            <TouchableOpacity 
+              style={styles.micButton}
+              onPress={isListening ? stopListening : startListening}
+            >
+              {isListening ? (
+                <MicOff size={24} color="#FFFFFF" />
+              ) : (
+                <Mic size={24} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
           </View>
+          
+          {/* Top Section - Logo with Enhanced Animation */}
+          <Animated.View style={[
+            styles.topSection,
+            {
+              opacity: fadeAnimation,
+              transform: [{ scale: scaleAnimation }],
+            }
+          ]}>
+            <Animated.View style={[
+              styles.logoContainer,
+              {
+                transform: [{ scale: pulseAnimation }],
+              }
+            ]}>
+              <LinearGradient
+                colors={['#4CAF50', '#2E7D32', '#4CAF50']}
+                style={styles.logoGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <View style={styles.logoWrapper}>
+                  <Image 
+                    source={require('./logoai.jpg')} 
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              </LinearGradient>
+              
+              {/* Glow Effect */}
+              <Animated.View style={[
+                styles.glowEffect,
+                {
+                  transform: [{ scale: pulseAnimation }],
+                  opacity: pulseAnimation.interpolate({
+                    inputRange: [1, 1.05],
+                    outputRange: [0.3, 0.6]
+                  })
+                }
+              ]} />
+            </Animated.View>
+            
+            {/* AI Badge */}
+            <View style={styles.aiBadge}>
+              <Sparkles size={16} color="#FFFFFF" />
+              <Text style={styles.aiBadgeText}>AI Powered</Text>
+            </View>
+          </Animated.View>
           
           {/* Heading Section */}
           <View style={styles.headingSection}>
-            <Text style={styles.mainHeading}>Choose Your Language</Text>
-            <Text style={styles.subHeading}>Select your preferred language to talk with the AI assistant</Text>
+            {showWelcome ? (
+              <Text style={styles.mainHeading}>Welcome to KrushiMitra</Text>
+            ) : (
+              <Text style={styles.mainHeading}>Choose Your Language</Text>
+            )}
+            <Text style={styles.subHeading}>
+              {showWelcome 
+                ? "What language do you prefer?" 
+                : "Select your preferred language for the AI assistant"}
+            </Text>
           </View>
           
           {/* Language Options Section */}
@@ -153,39 +634,138 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  particle: {
+    position: 'absolute',
+    zIndex: 0,
+  },
   backgroundGradient: {
     flex: 1,
   },
   
-  // Top Section
-  topSection: {
-    alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 20,
-  },
-  logoContainer: {
+  // Top Navigation
+  topNavigation: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
-  logoWrapper: {
-    width: 140,
-    height: 140,
-    borderRadius: 60,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#4CAF50',
     shadowOffset: {
       width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  topCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  topTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2E7D32',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  micButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  
+  // Top Section
+  topSection: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  logoContainer: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 12,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  logoGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#2E7D32',
+    shadowOffset: {
+      width: 0,
       height: 4,
     },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 10,
   },
   logoImage: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
+  },
+  glowEffect: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    borderRadius: 80,
+    backgroundColor: '#4CAF50',
+    opacity: 0.4,
+    zIndex: -1,
+  },
+  aiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2E7D32',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  aiBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   appName: {
     fontSize: 28,
@@ -202,11 +782,14 @@ const styles = StyleSheet.create({
   },
   mainHeading: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontWeight: '800',
+    color: '#2E7D32',
     marginBottom: 12,
     textAlign: 'center',
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    textShadowColor: 'rgba(46, 125, 50, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   subHeading: {
     fontSize: 16,
@@ -222,7 +805,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   languagesContainer: {
-    gap: 12,
+    gap: 16,
     paddingBottom: 20,
   },
   languageButton: {
@@ -230,53 +813,53 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    borderRadius: 8,
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   selectedLanguageButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
     borderColor: '#4CAF50',
     shadowColor: '#4CAF50',
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   languageContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
   },
   languageTextContainer: {
     flex: 1,
   },
   languageName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#333333',
     marginBottom: 4,
     textAlign: 'center',
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   selectedLanguageName: {
-    color: '#FFFFFF',
+    color: '#2E7D32',
   },
   nativeLanguageName: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#757575',
     textAlign: 'center',
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   selectedNativeLanguageName: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#4CAF50',
   },
   checkIconContainer: {
     marginLeft: 16,
@@ -290,19 +873,19 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     width: '100%',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 18,
-    borderRadius: 8,
+    backgroundColor: '#2E7D32',
+    paddingVertical: 20,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#4CAF50',
+    shadowColor: '#2E7D32',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 8,
     },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowRadius: 16,
+    elevation: 10,
   },
   continueButtonDisabled: {
     backgroundColor: '#A5D6A7',
@@ -310,8 +893,8 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
     letterSpacing: 0.5,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },

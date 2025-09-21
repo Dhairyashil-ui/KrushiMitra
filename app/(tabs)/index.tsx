@@ -285,8 +285,7 @@ export default function HomeScreen() {
   };
 
   const navigateToNews = () => {
-    // Navigate to farming news screen
-    console.log('Navigate to Farming News');
+    router.push('/farming-news');
   };
 
   const navigateToCarboSafe = () => {
