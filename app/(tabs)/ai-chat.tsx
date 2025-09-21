@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Animated, Alert, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Send, Bot, User, Sparkles } from 'lucide-react-native';
+import { Send, Bot, User, Sparkles, Image as ImageIcon } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
+  image?: string; // Add image property
 }
 
 const demoResponses: Record<string, string> = {
@@ -30,6 +32,7 @@ export default function AIChatScreen() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [glowAnimation] = useState(new Animated.Value(0));
 
   useEffect(() => {
@@ -51,6 +54,64 @@ export default function AIChatScreen() {
     glowLoop.start();
     return () => glowLoop.stop();
   }, []);
+
+  const pickImage = async () => {
+    try {
+      // Request permission to access media library
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission required', 'Permission to access camera roll is required to upload images.');
+        return;
+      }
+      
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+      
+      console.log('Image picker result:', result);
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const selectedImage = result.assets[0].uri;
+        console.log('Selected image URI:', selectedImage);
+        
+        setIsUploading(true);
+        
+        // Create image message
+        const imageMessage: Message = {
+          id: Date.now().toString(),
+          text: 'Image uploaded for crop analysis',
+          isUser: true,
+          timestamp: new Date(),
+          image: selectedImage,
+        };
+        
+        setMessages(prev => [...prev, imageMessage]);
+        setIsUploading(false);
+        
+        // Simulate AI response
+        setIsTyping(true);
+        setTimeout(() => {
+          setIsTyping(false);
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: 'Thanks for uploading the image. I can see potential signs of crop disease. I recommend applying neem oil spray and improving drainage around the affected plants.',
+            isUser: false,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, aiMessage]);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      setIsUploading(false);
+    }
+  };
 
   const sendMessage = () => {
     if (!inputText.trim()) return;
@@ -91,37 +152,52 @@ export default function AIChatScreen() {
     setInputText('');
   };
 
-  const renderMessage = (message: Message) => (
-    <View key={message.id} style={[
-      styles.messageContainer,
-      message.isUser ? styles.userMessage : styles.aiMessage
-    ]}>
-      <View style={styles.messageHeader}>
-        <LinearGradient
-          colors={message.isUser 
-            ? ['#3B82F6', '#2563EB'] 
-            : ['#22C55E', '#16A34A']
-          }
-          style={styles.messageIcon}
-        >
-          {message.isUser ? (
-            <User size={16} color="#FFFFFF" />
-          ) : (
-            <Bot size={16} color="#FFFFFF" />
-          )}
-        </LinearGradient>
-        <Text style={styles.messageTime}>
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+  const renderMessage = (message: Message) => {
+    console.log('Rendering message:', message);
+    return (
+      <View key={message.id} style={[
+        styles.messageContainer,
+        message.isUser ? styles.userMessage : styles.aiMessage
+      ]}>
+        <View style={styles.messageHeader}>
+          <LinearGradient
+            colors={message.isUser 
+              ? ['#3B82F6', '#2563EB'] 
+              : ['#22C55E', '#16A34A']
+            }
+            style={styles.messageIcon}
+          >
+            {message.isUser ? (
+              <User size={16} color="#FFFFFF" />
+            ) : (
+              <Bot size={16} color="#FFFFFF" />
+            )}
+          </LinearGradient>
+          <Text style={styles.messageTime}>
+            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </View>
+        
+        {message.image && (
+          <View style={styles.imageContainer}>
+            <Image 
+              source={{ uri: message.image }} 
+              style={styles.chatImage}
+              resizeMode="cover"
+              onError={(error) => console.log('Image load error:', error)}
+            />
+          </View>
+        )}
+        
+        <Text style={[
+          styles.messageText,
+          message.isUser ? styles.userMessageText : styles.aiMessageText
+        ]}>
+          {message.text}
         </Text>
       </View>
-      <Text style={[
-        styles.messageText,
-        message.isUser ? styles.userMessageText : styles.aiMessageText
-      ]}>
-        {message.text}
-      </Text>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -204,6 +280,23 @@ export default function AIChatScreen() {
           colors={['#F8FAFC', '#FFFFFF']}
           style={styles.inputGradient}
         >
+          <TouchableOpacity 
+            style={[styles.imageButton, isUploading && styles.disabledButton]} 
+            onPress={pickImage}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              // Show loading indicator while uploading
+              <View style={styles.loadingIndicator}>
+                <View style={styles.loadingDot} />
+                <View style={[styles.loadingDot, { opacity: 0.7 }]} />
+                <View style={[styles.loadingDot, { opacity: 0.4 }]} />
+              </View>
+            ) : (
+              <ImageIcon size={20} color="#4CAF50" />
+            )}
+          </TouchableOpacity>
+          
           <TextInput
             style={styles.textInput}
             placeholder="Ask about weather, crops, pests..."
@@ -409,6 +502,30 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  imageButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8F5E8',
+    marginRight: 8,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  loadingIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4CAF50',
+    marginHorizontal: 2,
+  },
   textInput: {
     flex: 1,
     maxHeight: 100,
@@ -497,5 +614,18 @@ const styles = StyleSheet.create({
   },
   dot3: {
     opacity: 1,
+  },
+  // Image styles
+  imageContainer: {
+    marginBottom: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    backgroundColor: '#F8FAFC',
+  },
+  chatImage: {
+    width: 200,
+    height: 150,
   },
 });

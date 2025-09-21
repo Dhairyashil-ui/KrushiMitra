@@ -266,7 +266,7 @@ export default function HomeScreen() {
   };
 
   const navigateToSchemes = () => {
-    router.push('/schemes');
+    router.push('/scheme');
   };
 
   const navigateToMandiPrices = () => {

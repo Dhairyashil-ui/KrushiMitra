@@ -1,309 +1,476 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Animated, Platform } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Alert, Clipboard, Animated, Easing, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Send, Bot, User, Sparkles, Wheat, Mic, Image, Plus, Clock, Star, TrendingUp } from 'lucide-react-native';
+import { ArrowLeft, Send, Bot, User, Sparkles, Wheat, Mic, Image as ImageIcon, Share2, Upload } from 'lucide-react-native';
+import { GiftedChat, IMessage, Bubble, InputToolbar, SendProps, BubbleProps } from 'react-native-gifted-chat';
+import * as Speech from 'expo-speech';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
+// @ts-ignore
+import Voice from '@react-native-voice/voice';
 
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-  type?: 'text' | 'suggestion' | 'quick_action';
-  category?: string;
+interface ChatMessage extends IMessage {
+  language?: string;
+  image?: string;
 }
 
-interface QuickAction {
-  id: string;
-  title: string;
-  icon: React.ReactNode;
-  description: string;
-  action: string;
-}
-
-interface ChatStats {
-  totalQuestions: number;
-  helpfulAnswers: number;
-  avgResponseTime: string;
-}
-
-const demoResponses: Record<string, string> = {
-  'what should i do today': '🌧️ Rain expected tomorrow, avoid spraying pesticides. Today is good for checking irrigation systems and preparing for the rain.',
-  'weather': '🌤️ Today: Partly cloudy, 28°C. Tomorrow: Rain expected with 15mm precipitation. Wind speed: 12 km/h from southwest.',
-  'pest control': '🐛 For effective pest control: 1) Inspect crops early morning, 2) Use neem oil spray for organic treatment, 3) Avoid chemical spraying before rain.',
-  'fertilizer': '🌱 For current season: Apply NPK 19:19:19 @ 200kg/ha. Add organic compost for better soil health. Best time: Early morning or evening.',
-  'crop disease': '🔍 Upload an image of affected plant for accurate diagnosis. Common signs: yellowing leaves, spots, wilting. Early detection is key for treatment.',
-  'irrigation': '💧 Check soil moisture at 6-inch depth. Water deeply but less frequently. Drip irrigation saves 30-50% water compared to flood irrigation.',
-};
+// API base URL - in a real app, this should come from environment variables
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 export default function AIChatScreen() {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: '1',
+      _id: 1,
       text: 'Hello! I\'m your AI farming assistant. I can help you with crop care, weather updates, pest control, and farming advice. What would you like to know?',
-      isUser: false,
-      timestamp: new Date(),
-      type: 'text'
+      createdAt: new Date(),
+      user: {
+        _id: 2,
+        name: 'KrushiAI',
+        avatar: '🤖',
+      },
     },
   ]);
-  const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [showQuickActions, setShowQuickActions] = useState(true);
-  const [glowAnimation] = useState(new Animated.Value(0));
-  const [fadeAnimation] = useState(new Animated.Value(0));
-  const [slideAnimation] = useState(new Animated.Value(30));
-  const [pulseAnimation] = useState(new Animated.Value(1));
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress] = useState(new Animated.Value(0));
   const router = useRouter();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pulseAnimation = useRef(new Animated.Value(0)).current;
+  const floatAnimation = useRef(new Animated.Value(0)).current;
 
-  // Enhanced chat statistics
-  const [chatStats] = useState<ChatStats>({
-    totalQuestions: 47,
-    helpfulAnswers: 43,
-    avgResponseTime: '2.3s'
-  });
-
-  // Quick action suggestions
-  const [quickActions] = useState<QuickAction[]>([
-    {
-      id: '1',
-      title: 'Weather Forecast',
-      icon: <TrendingUp size={20} color="#4CAF50" />,
-      description: 'Get today\'s weather and 7-day forecast',
-      action: 'weather forecast for today'
-    },
-    {
-      id: '2',
-      title: 'Crop Health Check',
-      icon: <Star size={20} color="#4CAF50" />,
-      description: 'Analyze crop condition and get advice',
-      action: 'crop health analysis'
-    },
-    {
-      id: '3',
-      title: 'Pest Control',
-      icon: <Plus size={20} color="#4CAF50" />,
-      description: 'Get pest identification and treatment tips',
-      action: 'pest control advice'
-    },
-    {
-      id: '4',
-      title: 'Daily Tasks',
-      icon: <Clock size={20} color="#4CAF50" />,
-      description: 'Check today\'s recommended farming activities',
-      action: 'what should I do today'
-    }
-  ]);
-
+  // Initialize animations
   useEffect(() => {
-    // Start entrance animations
-    Animated.parallel([
-      Animated.timing(fadeAnimation, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnimation, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Start glow animation for AI indicator
-    const glowLoop = Animated.loop(
+    // Pulse animation for AI status
+    Animated.loop(
       Animated.sequence([
-        Animated.timing(glowAnimation, {
+        Animated.timing(pulseAnimation, {
           toValue: 1,
           duration: 2000,
-          useNativeDriver: false,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
         }),
-        Animated.timing(glowAnimation, {
+        Animated.timing(pulseAnimation, {
           toValue: 0,
           duration: 2000,
-          useNativeDriver: false,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
         }),
       ])
-    );
-    glowLoop.start();
+    ).start();
 
-    // Pulse animation for recording
-    const pulseLoop = Animated.loop(
+    // Floating animation for action buttons
+    Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnimation, {
-          toValue: 1.1,
-          duration: 800,
+        Animated.timing(floatAnimation, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }),
-        Animated.timing(pulseAnimation, {
-          toValue: 1,
-          duration: 800,
+        Animated.timing(floatAnimation, {
+          toValue: 0,
+          duration: 3000,
+          easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }),
       ])
-    );
-    
-    if (isRecording) {
-      pulseLoop.start();
-    } else {
-      pulseLoop.stop();
-    }
+    ).start();
+  }, []);
+
+  // Initialize voice recognition
+  useEffect(() => {
+    Voice.onSpeechStart = () => setIsRecording(true);
+    Voice.onSpeechEnd = () => setIsRecording(false);
+    Voice.onSpeechResults = (event: any) => {
+      if (event.value && event.value.length > 0) {
+        handleSend([{
+          _id: Math.round(Math.random() * 1000000),
+          text: event.value[0],
+          createdAt: new Date(),
+          user: {
+            _id: 1,
+            name: 'Farmer',
+            avatar: '👤',
+          },
+        }], true);
+      }
+    };
+    Voice.onSpeechError = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+      Alert.alert('Speech Recognition Error', 'There was an error with speech recognition. Please try again.');
+    };
 
     return () => {
-      glowLoop.stop();
-      pulseLoop.stop();
+      Voice.destroy().then(Voice.removeAllListeners);
     };
-  }, [isRecording]);
+  }, []);
 
-  const sendMessage = (messageText?: string) => {
-    const textToSend = messageText || inputText;
-    if (!textToSend.trim()) return;
+  // Load chat history from AsyncStorage
+  useEffect(() => {
+    loadChatHistory();
+  }, []);
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: textToSend,
-      isUser: true,
-      timestamp: new Date(),
-      type: 'text'
-    };
+  const loadChatHistory = async () => {
+    try {
+      const history = await AsyncStorage.getItem('aiChatHistory');
+      if (history) {
+        const parsedHistory = JSON.parse(history);
+        setMessages(parsedHistory);
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  };
 
-    setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
-    setShowQuickActions(false);
+  const saveChatHistory = async (newMessages: ChatMessage[]) => {
+    try {
+      await AsyncStorage.setItem('aiChatHistory', JSON.stringify(newMessages));
+    } catch (error) {
+      console.error('Error saving chat history:', error);
+    }
+  };
 
-    // Scroll to bottom when new message is added
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+  const pickImage = async () => {
+    // Request permission to access media library
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission required', 'Permission to access camera roll is required to upload images.');
+      return;
+    }
+    
+    // Launch image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const selectedImage = result.assets[0].uri;
+      setIsUploading(true);
+      
+      // Animate upload progress
+      Animated.timing(uploadProgress, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }).start();
+      
+      // Simulate upload delay
+      setTimeout(() => {
+        setIsUploading(false);
+        uploadProgress.setValue(0);
+        
+        // Create image message
+        const imageMessage: ChatMessage = {
+          _id: Date.now(),
+          text: 'Crop image uploaded for analysis',
+          createdAt: new Date(),
+          user: {
+            _id: 1,
+            name: 'Farmer',
+            avatar: '👤',
+          },
+          image: selectedImage,
+        };
+        
+        handleSend([imageMessage]);
+      }, 2000);
+    }
+  };
 
-    // Find appropriate response
-    const query = textToSend.toLowerCase();
-    let response = 'I understand your question about farming. While I\'m in demo mode, I can help with weather updates, crop care, pest control, fertilizer advice, and irrigation tips. Please ask about specific farming topics!';
-    let category = 'general';
+  const handleSend = useCallback(async (newMessages: ChatMessage[], isVoiceInput = false) => {
+    // Add user message
+    setMessages(previousMessages => {
+      const updatedMessages = GiftedChat.append(previousMessages, newMessages);
+      saveChatHistory(updatedMessages);
+      return updatedMessages;
+    });
 
-    for (const [key, value] of Object.entries(demoResponses)) {
-      if (query.includes(key)) {
-        response = value;
-        category = key;
-        break;
+    // Get the last user message
+    const userMessage = newMessages[0];
+    
+    try {
+      // Call backend API
+      const response = await fetch(`${API_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer mock-token-12345' // In a real app, you would get this from authentication
+        },
+        body: JSON.stringify({
+          message: userMessage.text,
+          language: selectedLanguage,
+          image: userMessage.image
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Create AI response message
+      const aiResponse: ChatMessage = {
+        _id: Date.now(),
+        text: result.data.replyText,
+        createdAt: new Date(),
+        user: {
+          _id: 2,
+          name: 'KrushiAI',
+          avatar: '🤖',
+        },
+        language: result.data.language,
+      };
+
+      setMessages(previousMessages => {
+        const updatedMessages = GiftedChat.append(previousMessages, [aiResponse]);
+        saveChatHistory(updatedMessages);
+        
+        // Speak the response
+        speakResponse(aiResponse.text, selectedLanguage);
+        
+        return updatedMessages;
+      });
+    } catch (error) {
+      console.error('Error calling chat API:', error);
+      
+      // Fallback response in case of API error
+      const fallbackResponse: ChatMessage = {
+        _id: Date.now(),
+        text: "I'm sorry, I'm having trouble connecting to the server right now. Please try again later.",
+        createdAt: new Date(),
+        user: {
+          _id: 2,
+          name: 'KrushiAI',
+          avatar: '🤖',
+        },
+        language: selectedLanguage,
+      };
+
+      setMessages(previousMessages => {
+        const updatedMessages = GiftedChat.append(previousMessages, [fallbackResponse]);
+        saveChatHistory(updatedMessages);
+        
+        // Speak the response
+        speakResponse(fallbackResponse.text, selectedLanguage);
+        
+        return updatedMessages;
+      });
+    }
+  }, [selectedLanguage]);
+
+  const speakResponse = (text: string, language: string) => {
+    setIsSpeaking(true);
+    Speech.speak(text, {
+      language: language === 'hi' ? 'hi-IN' : 'en-US',
+      pitch: 1.0,
+      rate: 0.9,
+      onDone: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
+  };
+
+  const startVoiceRecording = async () => {
+    if (isRecording) {
+      try {
+        await Voice.stop();
+        setIsRecording(false);
+        if (recordingTimeoutRef.current) {
+          clearTimeout(recordingTimeoutRef.current);
+          recordingTimeoutRef.current = null;
+        }
+      } catch (error) {
+        console.error('Error stopping voice recording:', error);
+      }
+    } else {
+      try {
+        await Voice.start('en-US');
+        setIsRecording(true);
+        
+        // Auto-stop recording after 10 seconds
+        recordingTimeoutRef.current = setTimeout(() => {
+          stopVoiceRecording();
+        }, 10000) as unknown as NodeJS.Timeout;
+      } catch (error) {
+        console.error('Error starting voice recording:', error);
+        Alert.alert('Speech Recognition Error', 'Microphone access is required for voice input. Please ensure you have given the necessary permissions.');
       }
     }
-
-    // Enhanced responses based on category
-    if (query.includes('crop health') || query.includes('analysis')) {
-      response = '🌱 For comprehensive crop health analysis: 1) Check leaf color and texture, 2) Monitor growth patterns, 3) Inspect for pest damage, 4) Test soil moisture levels. Would you like me to guide you through a specific crop assessment?';
-      category = 'crop_health';
-    }
-
-    // Simulate AI response delay with realistic timing
-    const responseDelay = Math.random() * 1000 + 1500; // 1.5-2.5 seconds
-    setTimeout(() => {
-      setIsTyping(false);
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: response,
-        isUser: false,
-        timestamp: new Date(),
-        type: 'text',
-        category
-      };
-      setMessages(prev => [...prev, aiMessage]);
-      
-      // Scroll to bottom after AI response
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }, responseDelay);
-
-    setInputText('');
   };
 
-  const handleVoiceRecording = () => {
-    setIsRecording(!isRecording);
-    if (!isRecording) {
-      // Start recording simulation
-      setTimeout(() => {
-        setIsRecording(false);
-        setInputText('What should I do about yellow leaves on my tomato plants?');
-      }, 3000);
+  const stopVoiceRecording = async () => {
+    try {
+      await Voice.stop();
+      setIsRecording(false);
+      if (recordingTimeoutRef.current) {
+        clearTimeout(recordingTimeoutRef.current);
+        recordingTimeoutRef.current = null;
+      }
+    } catch (error) {
+      console.error('Error stopping voice recording:', error);
     }
   };
 
-  const handleImageUpload = () => {
-    // Simulate image upload for crop analysis
-    const imageAnalysisMessage: Message = {
-      id: Date.now().toString(),
-      text: '📸 Image uploaded successfully! Analyzing crop condition...',
-      isUser: true,
-      timestamp: new Date(),
-      type: 'text'
-    };
-    
-    setMessages(prev => [...prev, imageAnalysisMessage]);
-    setIsTyping(true);
-    
-    setTimeout(() => {
-      setIsTyping(false);
-      const analysisResult: Message = {
-        id: (Date.now() + 1).toString(),
-        text: '🔍 Analysis Complete: I can see healthy green leaves with good moisture levels. No signs of disease detected. Your crop looks healthy! Continue current care routine and monitor for any changes.',
-        isUser: false,
-        timestamp: new Date(),
-        type: 'text',
-        category: 'image_analysis'
-      };
-      setMessages(prev => [...prev, analysisResult]);
-    }, 3000);
+  const shareMessage = async (text: string) => {
+    try {
+      await Clipboard.setString(text);
+      Alert.alert('Copied to clipboard', 'Message copied to clipboard. You can now paste it in WhatsApp or other apps.');
+    } catch (error) {
+      console.error('Error sharing message:', error);
+      Alert.alert('Error', 'Failed to copy message to clipboard.');
+    }
   };
 
-  const handleQuickAction = (action: QuickAction) => {
-    sendMessage(action.action);
+  const renderBubble = (props: BubbleProps<ChatMessage>) => {
+    return (
+      <View>
+        {props.currentMessage.image && (
+          <View style={styles.imageContainer}>
+            <LinearGradient
+              colors={['#4CAF50', '#2E7D32']}
+              style={styles.imageBorder}
+            >
+              <View style={styles.imageView}>
+                <Image 
+                  source={{ uri: props.currentMessage.image }} 
+                  style={styles.chatImage}
+                  resizeMode="cover"
+                />
+              </View>
+            </LinearGradient>
+          </View>
+        )}
+        <Bubble
+          {...props}
+          wrapperStyle={{
+            left: {
+              backgroundColor: '#FFFFFF',
+              borderBottomLeftRadius: 0,
+              ...props.currentMessage.image && { marginTop: 10 }
+            },
+            right: {
+              backgroundColor: '#4CAF50',
+              borderBottomRightRadius: 0,
+            },
+          }}
+          textStyle={{
+            left: {
+              color: '#333333',
+            },
+            right: {
+              color: '#FFFFFF',
+            },
+          }}
+        />
+        <TouchableOpacity
+          style={styles.shareButton}
+          onPress={() => shareMessage(props.currentMessage.text)}
+        >
+          <Share2 size={16} color="#6B7280" />
+        </TouchableOpacity>
+      </View>
+    );
   };
 
-  const renderMessage = (message: Message) => (
-    <View key={message.id} style={[
-      styles.messageContainer,
-      message.isUser ? styles.userMessage : styles.aiMessage
-    ]}>
-      <View style={styles.messageHeader}>
-        <View style={[
-          styles.messageIcon,
-          message.isUser ? styles.userMessageIcon : styles.aiMessageIcon
-        ]}>
-          {message.isUser ? (
-            <User size={16} color={message.isUser ? '#FFFFFF' : '#4CAF50'} />
-          ) : (
-            <Bot size={16} color="#4CAF50" />
-          )}
-        </View>
-        <Text style={styles.messageTime}>
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
+  const renderSend = (props: SendProps<ChatMessage>) => {
+    if (!props.text || props.text.trim().length === 0) {
+      return (
+        <TouchableOpacity
+          style={styles.sendButton}
+          onPress={() => {}}
+          disabled={true}
+        >
+          <View style={[styles.sendIconContainer, styles.disabledSendIcon]}>
+            <Send size={20} color="#9CA3AF" />
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={styles.sendButton}
+        onPress={() => {
+          if (props.text && props.onSend) {
+            props.onSend({ text: props.text.trim() }, true);
+          }
+        }}
+      >
+        <LinearGradient
+          colors={['#4CAF50', '#2E7D32']}
+          style={styles.sendIconContainer}
+        >
+          <Send size={20} color="#FFFFFF" />
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderInputToolbar = (props: any) => {
+    return (
+      <InputToolbar
+        {...props}
+        containerStyle={styles.inputToolbar}
+        primaryStyle={styles.inputPrimary}
+      />
+    );
+  };
+
+  const renderActions = () => {
+    const float = floatAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -5],
+    });
+
+    return (
+      <View style={styles.actionButtonsContainer}>
+        <Animated.View style={{ transform: [{ translateY: float }] }}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.imageButton]}
+            onPress={pickImage}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <Upload size={20} color="#4CAF50" />
+            ) : (
+              <ImageIcon size={20} color="#4CAF50" />
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+        
+        <Animated.View style={{ transform: [{ translateY: float }] }}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.voiceButton, isRecording && styles.recordingButton]}
+            onPress={startVoiceRecording}
+          >
+            <Mic size={20} color={isRecording ? '#FFFFFF' : '#4CAF50'} />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
-      <View style={[
-        styles.messageText,
-        message.isUser ? styles.userMessageText : styles.aiMessageText
-      ]}>
-        <Text style={[
-          styles.messageTextContent,
-          message.isUser ? styles.userMessageTextContent : styles.aiMessageTextContent
-        ]}>
-          {message.text}
-        </Text>
-      </View>
-    </View>
-  );
+    );
+  };
+
+  const pulseScale = pulseAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.1],
+  });
 
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
         colors={['#FFFFFF', '#F1F8E9', '#E8F5E8']}
         style={styles.backgroundGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0.3 }}
       >
-        {/* Enhanced Header */}
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <ArrowLeft size={24} color="#4CAF50" />
@@ -311,181 +478,75 @@ export default function AIChatScreen() {
           
           <View style={styles.headerContent}>
             <View style={styles.logoContainer}>
-              <View style={styles.logoWrapper}>
+              <Animated.View style={[styles.logoWrapper, { transform: [{ scale: pulseScale }] }]}>
                 <Wheat size={20} color="#4CAF50" />
-              </View>
+              </Animated.View>
               <View style={styles.titleContainer}>
                 <Text style={styles.headerTitle}>AI Farming Assistant</Text>
                 <Text style={styles.headerSubtitle}>Smart Agriculture Support</Text>
               </View>
             </View>
             
-            <Animated.View style={[
-              styles.aiIndicator,
-              {
-                shadowOpacity: glowAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.3, 0.8],
-                }),
-                shadowRadius: glowAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [4, 12],
-                }),
-              }
-            ]}>
+            <View style={styles.aiIndicator}>
               <LinearGradient
                 colors={['#4CAF50', '#2E7D32']}
                 style={styles.aiIndicatorGradient}
               >
-                <Animated.View style={[
-                  styles.aiDot,
-                  {
-                    opacity: glowAnimation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.8, 1],
-                    }),
-                  }
-                ]} />
-                <Text style={styles.aiStatus}>Online</Text>
+                <Animated.View style={[styles.aiDot, { transform: [{ scale: pulseScale }] }]} />
+                <Text style={styles.aiStatus}>
+                  {isSpeaking ? 'Speaking' : 'Online'}
+                </Text>
                 <Sparkles size={12} color="#FFFFFF" style={styles.sparkleIcon} />
               </LinearGradient>
-            </Animated.View>
+            </View>
           </View>
         </View>
 
-        <ScrollView 
-          ref={scrollViewRef}
-          style={styles.messagesContainer} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.messagesContent}
-        >
-          {messages.map(renderMessage)}
-          {isTyping && (
-            <View style={[styles.messageContainer, styles.aiMessage]}>
-              <View style={styles.messageHeader}>
-                <LinearGradient
-                  colors={['#4CAF50', '#2E7D32']}
-                  style={styles.typingIcon}
-                >
-                  <Bot size={16} color="#FFFFFF" />
-                </LinearGradient>
-                <Text style={styles.messageTime}>typing...</Text>
-              </View>
-              <View style={styles.typingIndicator}>
-                <Animated.View style={[styles.typingDot, styles.dot1]} />
-                <Animated.View style={[styles.typingDot, styles.dot2]} />
-                <Animated.View style={[styles.typingDot, styles.dot3]} />
-              </View>
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Enhanced Input Container */}
-        <View style={styles.inputContainer}>
-          <LinearGradient
-            colors={['#FFFFFF', '#F8FAFC']}
-            style={styles.inputContainerGradient}
-          >
-            {/* Recording Indicator */}
-            {isRecording && (
-              <Animated.View style={[
-                styles.recordingIndicator,
-                {
-                  transform: [{ scale: pulseAnimation }],
-                }
-              ]}>
-                <View style={styles.recordingDot} />
-                <Text style={styles.recordingText}>Recording...</Text>
-              </Animated.View>
-            )}
-            
-            <View style={styles.inputRow}>
-              {/* Voice Input Button */}
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  isRecording && styles.recordingButton
-                ]}
-                onPress={handleVoiceRecording}
-                activeOpacity={0.8}
-              >
-                <Animated.View style={[
-                  { transform: [{ scale: isRecording ? pulseAnimation : new Animated.Value(1) }] }
-                ]}>
-                  <Mic size={20} color={isRecording ? '#FFFFFF' : '#4CAF50'} />
-                </Animated.View>
-              </TouchableOpacity>
-              
-              {/* Text Input */}
-              <TextInput
-                style={styles.textInput}
-                placeholder="Ask about weather, crops, pests..."
-                value={inputText}
-                onChangeText={setInputText}
-                multiline
-                maxLength={200}
-                placeholderTextColor="#9CA3AF"
-                editable={!isRecording}
-              />
-              
-              {/* Image Upload Button */}
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleImageUpload}
-                activeOpacity={0.8}
-              >
-                <Image size={20} color="#4CAF50" />
-              </TouchableOpacity>
-              
-              {/* Send Button */}
-              <TouchableOpacity
-                style={[
-                  styles.sendButton, 
-                  (!inputText.trim() && !isRecording) && styles.disabledSendButton
-                ]}
-                onPress={() => sendMessage()}
-                disabled={!inputText.trim() && !isRecording}
-                activeOpacity={0.8}
-              >
-                <Send size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
-        </View>
-
-        {/* Enhanced Suggestions */}
-        <View style={styles.suggestionsContainer}>
-          <LinearGradient
-            colors={['#FFFFFF', '#F8FAFC']}
-            style={styles.suggestionsGradient}
-          >
-            <Text style={styles.suggestionsTitle}>Quick Questions:</Text>
-            <View style={styles.suggestionsRow}>
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => sendMessage('What should I do today?')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.suggestionText}>Today's Tasks</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => sendMessage('Weather forecast')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.suggestionText}>Weather</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => sendMessage('Pest control tips')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.suggestionText}>Pest Control</Text>
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
-        </View>
+        {/* Chat */}
+        <GiftedChat
+          messages={messages}
+          onSend={newMessages => handleSend(newMessages as ChatMessage[])}
+          user={{
+            _id: 1,
+            name: 'Farmer',
+            avatar: '👤',
+          }}
+          renderBubble={renderBubble}
+          renderSend={renderSend}
+          renderInputToolbar={renderInputToolbar}
+          renderActions={renderActions}
+          placeholder="Ask about weather, crops, pests..."
+          alwaysShowSend
+          keyboardShouldPersistTaps="handled"
+          renderAvatar={null}
+        />
       </LinearGradient>
+      
+      {/* Upload progress indicator */}
+      {isUploading && (
+        <View style={styles.uploadOverlay}>
+          <LinearGradient
+            colors={['rgba(76, 175, 80, 0.9)', 'rgba(46, 125, 50, 0.9)']}
+            style={styles.uploadContainer}
+          >
+            <Upload size={32} color="#FFFFFF" />
+            <Text style={styles.uploadText}>Analyzing crop image...</Text>
+            <View style={styles.progressBar}>
+              <Animated.View 
+                style={[
+                  styles.progressFill, 
+                  { 
+                    width: uploadProgress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    })
+                  }
+                ]} 
+              />
+            </View>
+          </LinearGradient>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -560,277 +621,140 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     marginTop: 2,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
   aiIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(76, 175, 80, 0.1)',
     borderRadius: 20,
-    shadowColor: '#4CAF50',
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   aiIndicatorGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    borderRadius: 20,
     paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
+    paddingHorizontal: 12,
   },
   aiDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: '#FFFFFF',
+    marginRight: 8,
   },
   aiStatus: {
     fontSize: 12,
-    color: '#FFFFFF',
     fontWeight: '600',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    color: '#FFFFFF',
+    marginRight: 4,
   },
   sparkleIcon: {
-    marginLeft: 2,
+    marginLeft: 4,
   },
-  messagesContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  messagesContent: {
-    paddingVertical: 16,
-  },
-  statsContainer: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statsGradient: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  statItem: {
-    flex: 1,
+  shareButton: {
+    position: 'absolute',
+    right: 10,
+    bottom: -20,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  statDivider: {
-    width: 1,
-    height: '100%',
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 16,
-  },
-  quickActionsContainer: {
-    marginBottom: 24,
-  },
-  quickActionsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  quickActionCard: {
-    width: '48%',
-  },
-  quickActionButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000000',
+  inputToolbar: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 10,
+    paddingBottom: 20,
+    marginBottom: 10,
+    borderRadius: 20,
+    marginHorizontal: 10,
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  quickActionGradient: {
-    padding: 16,
-    minHeight: 100,
+  inputPrimary: {
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
   },
-  quickActionIcon: {
+  sendButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F1F8E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  quickActionTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 4,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  quickActionDescription: {
-    fontSize: 12,
-    color: '#6B7280',
-    lineHeight: 16,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  messageContainer: {
-    marginBottom: 16,
-  },
-  userMessage: {
-    alignItems: 'flex-end',
-  },
-  aiMessage: {
-    alignItems: 'flex-start',
-  },
-  messageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  messageIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  userMessageIcon: {
-    backgroundColor: '#4CAF50',
-  },
-  aiMessageIcon: {
-    backgroundColor: '#F1F8E9',
-  },
-  messageTime: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  messageText: {
-    maxWidth: '80%',
-    borderRadius: 16,
-    shadowColor: '#000000',
+    marginLeft: 8,
+    shadowColor: '#4CAF50',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
   },
-  userMessageText: {
-    backgroundColor: '#4CAF50',
+  sendIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  aiMessageText: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+  disabledSendIcon: {
+    backgroundColor: '#F3F4F6',
   },
-  messageTextContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    lineHeight: 20,
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  userMessageTextContent: {
-    color: '#FFFFFF',
-  },
-  aiMessageTextContent: {
-    color: '#1F2937',
-  },
-  inputContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  inputContainerGradient: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  recordingIndicator: {
+  actionButtonsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
-  recordingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#EF4444',
-    marginRight: 8,
-  },
-  recordingText: {
-    fontSize: 14,
-    color: '#EF4444',
-    fontWeight: '600',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
+    justifyContent: 'space-between',
+    width: 90,
   },
   actionButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F1F8E9',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E8F5E8',
+    backgroundColor: '#E8F5E8',
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  imageButton: {
+    marginRight: 8,
+  },
+  voiceButton: {
+    backgroundColor: '#E8F5E8',
   },
   recordingButton: {
-    backgroundColor: '#EF4444',
-    borderColor: '#DC2626',
-  },
-  textInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    maxHeight: 100,
-    backgroundColor: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
     shadowColor: '#4CAF50',
     shadowOffset: {
       width: 0,
@@ -840,76 +764,62 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  disabledSendButton: {
-    backgroundColor: '#D1D5DB',
-    shadowOpacity: 0.1,
-  },
-  suggestionsContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  suggestionsGradient: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  suggestionsTitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  suggestionsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  suggestionChip: {
-    backgroundColor: '#F1F8E9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  imageContainer: {
+    marginBottom: 10,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E8F5E8',
+    overflow: 'hidden',
+    width: 200,
+    height: 150,
   },
-  suggestionText: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  imageBorder: {
+    padding: 3,
+    borderRadius: 16,
   },
-  // Typing indicator styles
-  typingIcon: {
-    width: 28,
-    height: 28,
+  imageView: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
+    overflow: 'hidden',
+    flex: 1,
+  },
+  chatImage: {
+    width: '100%',
+    height: '100%',
+  },
+  uploadOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 1000,
   },
-  typingIndicator: {
-    flexDirection: 'row',
+  uploadContainer: {
+    width: '80%',
+    padding: 20,
+    borderRadius: 20,
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
-    maxWidth: '80%',
-    gap: 4,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    justifyContent: 'center',
   },
-  typingDot: {
-    width: 8,
+  uploadText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  progressBar: {
+    width: '100%',
     height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 4,
-    backgroundColor: '#4CAF50',
+    overflow: 'hidden',
   },
-  dot1: {
-    opacity: 0.4,
-  },
-  dot2: {
-    opacity: 0.7,
-  },
-  dot3: {
-    opacity: 1,
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
   },
 });

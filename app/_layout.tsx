@@ -31,6 +31,8 @@ export default function RootLayout() {
         <Stack.Screen name="crop-disease" />
         <Stack.Screen name="activity-tracking" />
         <Stack.Screen name="test-ai-storage" />
+        <Stack.Screen name="scheme" />
+        <Stack.Screen name="mandi-prices" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" />
       </Stack>
