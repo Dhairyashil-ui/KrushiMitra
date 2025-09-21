@@ -23,7 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Camera as ExpoCamera, CameraType } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
-import { postVoiceMessage as postVoiceMessageAPI } from '../../src/utils/api';
+
 import { 
   MessageCircle, 
   Heart, 
@@ -769,8 +769,16 @@ export default function CommunityScreen({ navigation, route }: any) {
           audioFile: audioFileObj
         });
         
-        // Call the API to post voice message
-        const response = await postVoiceMessageAPI(userId, recordedAudio);
+        // Mock response for development
+        const response = {
+          success: true,
+          message: 'Voice message posted successfully (mock response)',
+          data: {
+            id: Date.now(),
+            userId,
+            timestamp: new Date().toISOString()
+          }
+        };
         console.log('API Response:', response);
         
         // Validate response structure
@@ -780,7 +788,7 @@ export default function CommunityScreen({ navigation, route }: any) {
         
         // Create new post object for the feed
         const newPost = {
-          id: response.data?.id || response.id || Date.now(), // Use API response ID or generate unique ID
+          id: response.data?.id || Date.now(), // Use API response ID or generate unique ID
           author: 'You', // Current user
           location: 'Your Location',
           time: 'Just now',
