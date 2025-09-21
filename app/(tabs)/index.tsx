@@ -269,13 +269,12 @@ export default function HomeScreen() {
     router.push('/schemes');
   };
 
-  const navigateToCropDisease = () => {
-    router.push('/crop-disease');
+  const navigateToMandiPrices = () => {
+    router.push('/mandi-prices');
   };
 
-  const navigateToMandiPrices = () => {
-    // Navigate to mandi prices screen
-    console.log('Navigate to Mandi Prices');
+  const navigateToCropDisease = () => {
+    router.push('/crop-disease');
   };
 
   const navigateToNews = () => {
