@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { offlineStorage } from '../src/utils/offlineStorage';
 import { realtimeUpdates } from '../src/utils/realtimeUpdates';
 import { networkManager } from '../src/utils/networkManager';
@@ -436,6 +437,7 @@ const MOCK_MANDI_PRICES: MandiPrice[] = [
 ];
 
 export default function MandiPricesScreen() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);

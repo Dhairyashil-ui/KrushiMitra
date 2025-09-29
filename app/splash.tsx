@@ -277,8 +277,8 @@ export default function SplashScreen() {
             }
           ]}>
             <Text style={styles.appName}>KrushiMitra</Text>
-            <Text style={styles.tagline}>Smart Farming Solutions</Text>
-            <Text style={styles.subtitle}>Empowering Farmers with AI Technology</Text>
+            <Text style={styles.tagline}>स्मार्ट खेती समाधान</Text>
+            <Text style={styles.subtitle}>कृत्रिम बुद्धिमत्ता तकनीक के साथ किसानों को सशक्त बनाना</Text>
             
             {/* Loading Indicator */}
             <View style={styles.loadingContainer}>
@@ -303,7 +303,7 @@ export default function SplashScreen() {
             transform: [{ translateY: textSlideAnimation }]
           }
         ]}>
-          <Text style={styles.bottomText}>Initializing AI Systems...</Text>
+          <Text style={styles.bottomText}>AI सिस्टम शुरू कर रहे हैं...</Text>
         </Animated.View>
       </View>
     </PageTransition>

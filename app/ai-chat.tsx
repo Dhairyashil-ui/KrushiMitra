@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Send, Bot, User, Sparkles, Wheat, Mic, Image as ImageIcon, Share2, Upload } from 'lucide-react-native';
 import { GiftedChat, IMessage, Bubble, InputToolbar, SendProps, BubbleProps } from 'react-native-gifted-chat';
-import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 // @ts-ignore
@@ -17,13 +17,26 @@ interface ChatMessage extends IMessage {
 }
 
 // API base URL - in a real app, this should come from environment variables
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+// API Configuration - LAN IP for mobile device connectivity
+// For mobile devices, use your computer's LAN IP instead of localhost
+// API base URL - in a real app, this should come from environment variables
+// API Configuration - LAN IP for mobile device connectivity
+// For mobile devices, use your computer's LAN IP instead of localhost
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000';
+console.log('AI Chat API_BASE_URL configured as:', API_BASE_URL);
+console.log('AI Chat API_BASE_URL configured as:', API_BASE_URL);
 
 export default function AIChatScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       _id: 1,
-      text: 'Hello! I\'m your AI farming assistant. I can help you with crop care, weather updates, pest control, and farming advice. What would you like to know?',
+      text: `Hello! I'm your KrushiMitra farming assistant. I can help you with crop care, weather updates, pest control, and farming advice in your preferred language.
+
+नमस्ते! मैं आपका कृषि मित्र सहायक हूँ। मैं फसल देखभाल, मौसम अपडेट, कीट नियंत्रण और कृषि सलाह में आपकी मदद कर सकता हूँ।
+
+നമസ്കാരം! ഞാൻ നിങ്ങളുടെ കൃഷി മിത്ര സഹായിയാണ്. വിള പരിചരണം, കാലാവസ്ഥ അപ്ഡേറ്റുകൾ, കീടനാശനിയന്ത്രണം, കാർഷിക ഉപദേശം എന്നിവയിൽ ഞാൻ നിങ്ങളെ സഹായിക്കാം.
+
+नमस्कार! मी तुमचा कृषी मित्र सहाय्यक आहे. मी तुम्हाला पीक काळजी, हवामान अद्यतने, कीटक नियंत्रण आणि शेती सल्ला यांमध्ये मदत करू शकतो.`,
       createdAt: new Date(),
       user: {
         _id: 2,
@@ -200,14 +213,15 @@ export default function AIChatScreen() {
     
     try {
       // Call backend API
-      const response = await fetch(`${API_BASE_URL}/chat`, {
+      const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer mock-token-12345' // In a real app, you would get this from authentication
         },
         body: JSON.stringify({
-          message: userMessage.text,
+          farmerId: 'farmer123', // In a real app, you would get this from the farmer's profile
+          query: userMessage.text,
           language: selectedLanguage,
           image: userMessage.image
         })
@@ -269,15 +283,46 @@ export default function AIChatScreen() {
     }
   }, [selectedLanguage]);
 
-  const speakResponse = (text: string, language: string) => {
+  const speakResponse = async (text: string, language: string) => {
     setIsSpeaking(true);
-    Speech.speak(text, {
-      language: language === 'hi' ? 'hi-IN' : 'en-US',
-      pitch: 1.0,
-      rate: 0.9,
-      onDone: () => setIsSpeaking(false),
-      onError: () => setIsSpeaking(false),
-    });
+    
+    try {
+      // ONLY use 11labs Niraj voice from backend - NO FALLBACKS
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false });
+      
+      // Call backend TTS endpoint with ONLY Niraj Hindi voice
+      const ttsUrl = `${API_BASE_URL}/tts?lang=hi&text=${encodeURIComponent(text)}`;
+      console.log('AI Chat calling TTS endpoint:', ttsUrl);
+      
+      const { sound } = await Audio.Sound.createAsync({ uri: ttsUrl }, { shouldPlay: true });
+      
+      // Handle playback completion
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if ('didJustFinish' in status && status.didJustFinish) {
+          sound.unloadAsync();
+          setIsSpeaking(false);
+        }
+        if ('error' in status && status.error) {
+          console.error('Niraj voice audio playback error:', status.error);
+          setIsSpeaking(false);
+        }
+      });
+    } catch (error) {
+      console.error('AI Chat Niraj voice TTS error details:', error);
+      console.error('AI Chat TTS URL attempted:', `${API_BASE_URL}/tts`);
+      
+      setIsSpeaking(false);
+      
+      // Provide helpful error message for connection issues
+      if (error instanceof Error && (error.message.includes('Network request failed') || error.message.includes('Failed to load'))) {
+        console.warn('AI Chat TTS Backend Connection Error: Make sure the backend server is running and accessible');
+        Alert.alert('Connection Error', 'Unable to connect to the text-to-speech service. Please ensure the backend server is running and accessible.');
+      } else {
+        Alert.alert('Audio Error', 'There was an error playing the audio response. Please try again.');
+      }
+      
+      // NO FALLBACK - Only Niraj voice allowed
+    }
   };
 
   const startVoiceRecording = async () => {

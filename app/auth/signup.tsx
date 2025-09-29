@@ -17,8 +17,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, User, Phone, MapPin, Leaf, Shield, Sparkles } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function SignUpScreen() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     farmerName: '',
     phoneNumber: '',
@@ -39,7 +41,7 @@ export default function SignUpScreen() {
 
   const handleSendOTP = async () => {
     if (!formData.phoneNumber.trim() || formData.phoneNumber.length !== 10) {
-      Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
+      Alert.alert(t('error'), t('invalidPhoneNumber'));
       return;
     }
 
@@ -49,34 +51,34 @@ export default function SignUpScreen() {
     setTimeout(() => {
       setOtpSent(true);
       setOtpLoading(false);
-      Alert.alert('Success', 'OTP sent successfully to your mobile number');
+      Alert.alert(t('success'), t('signup.otpSentSuccess'));
     }, 1500);
   };
 
   const handleSubmit = async () => {
     // Validate all required fields
     if (!formData.farmerName.trim()) {
-      Alert.alert('Error', 'Please enter farmer name');
+      Alert.alert(t('error'), t('nameRequired'));
       return;
     }
     if (!formData.phoneNumber.trim()) {
-      Alert.alert('Error', 'Please enter mobile number');
+      Alert.alert(t('error'), t('phoneNumberRequired'));
       return;
     }
     if (!formData.landSize.trim()) {
-      Alert.alert('Error', 'Please enter land size');
+      Alert.alert(t('error'), t('signup.landSizeRequired'));
       return;
     }
     if (!formData.soilType.trim()) {
-      Alert.alert('Error', 'Please enter soil type');
+      Alert.alert(t('error'), t('signup.soilTypeRequired'));
       return;
     }
     if (!otpSent) {
-      Alert.alert('Error', 'Please send OTP first');
+      Alert.alert(t('error'), t('signup.sendOtpFirst'));
       return;
     }
     if (!formData.otp.trim()) {
-      Alert.alert('Error', 'Please enter OTP');
+      Alert.alert(t('error'), t('enterOTP'));
       return;
     }
 
@@ -86,11 +88,11 @@ export default function SignUpScreen() {
     setTimeout(() => {
       setLoading(false);
       Alert.alert(
-        'Success',
-        'Registration completed successfully!',
+        t('success'),
+        t('signup.registrationCompleted'),
         [
           {
-            text: 'OK',
+            text: t('ok'),
             onPress: () => router.replace('/(tabs)'),
           },
         ]
@@ -121,7 +123,7 @@ export default function SignUpScreen() {
             </TouchableOpacity>
             
             <View style={styles.topCenter}>
-              <Text style={styles.topTitle}>Sign Up</Text>
+              <Text style={styles.topTitle}>{t('signup')}</Text>
             </View>
             
             <View style={styles.topPlaceholder} />
@@ -152,14 +154,14 @@ export default function SignUpScreen() {
             {/* AI Badge */}
             <View style={styles.aiBadge}>
               <Sparkles size={16} color="#FFFFFF" />
-              <Text style={styles.aiBadgeText}>AI Powered</Text>
+              <Text style={styles.aiBadgeText}>{t('aiPowered')}</Text>
             </View>
           </View>
           
           {/* Heading Section */}
           <View style={styles.headingSection}>
-            <Text style={styles.mainHeading}>Create Account</Text>
-            <Text style={styles.subHeading}>Fill in your farming details to get started</Text>
+            <Text style={styles.mainHeading}>{t('signup')}</Text>
+            <Text style={styles.subHeading}>{t('signup.fillFarmingDetails')}</Text>
           </View>
 
           <ScrollView 
@@ -172,14 +174,14 @@ export default function SignUpScreen() {
               
               {/* Farmer Name */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>FARMER NAME *</Text>
+                <Text style={styles.inputLabel}>{t('name').toUpperCase()} *</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
                     <User size={20} color="#4CAF50" />
                   </View>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter Farmer Name"
+                    placeholder={t('enterName')}
                     placeholderTextColor="#999"
                     value={formData.farmerName}
                     onChangeText={(value) => handleInputChange('farmerName', value)}
@@ -190,7 +192,7 @@ export default function SignUpScreen() {
 
               {/* Phone Number with Send OTP */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>PHONE NUMBER *</Text>
+                <Text style={styles.inputLabel}>{t('phoneNumber').toUpperCase()} *</Text>
                 <View style={styles.phoneInputRow}>
                   <View style={styles.phoneInputContainer}>
                     <View style={styles.inputIconContainer}>
@@ -198,7 +200,7 @@ export default function SignUpScreen() {
                     </View>
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter Mobile Number"
+                      placeholder={t('enterPhoneNumber')}
                       placeholderTextColor="#999"
                       value={formData.phoneNumber}
                       onChangeText={(value) => handleInputChange('phoneNumber', value)}
@@ -216,7 +218,7 @@ export default function SignUpScreen() {
                     activeOpacity={0.8}
                   >
                     <Text style={styles.otpButtonText}>
-                      {otpLoading ? 'Sending...' : 'Send OTP'}
+                      {otpLoading ? t('loading') : t('getOTP')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -224,14 +226,14 @@ export default function SignUpScreen() {
 
               {/* Land Size */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>LAND SIZE *</Text>
+                <Text style={styles.inputLabel}>{t('signup.landSize').toUpperCase()} *</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
                     <MapPin size={20} color="#4CAF50" />
                   </View>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter Land Size (in acres/hectares)"
+                    placeholder={t('signup.enterLandSize')}
                     placeholderTextColor="#999"
                     value={formData.landSize}
                     onChangeText={(value) => handleInputChange('landSize', value)}
@@ -241,14 +243,14 @@ export default function SignUpScreen() {
 
               {/* Soil Type */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>SOIL TYPE *</Text>
+                <Text style={styles.inputLabel}>{t('signup.soilType').toUpperCase()} *</Text>
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconContainer}>
                     <Leaf size={20} color="#4CAF50" />
                   </View>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter Soil Type"
+                    placeholder={t('signup.enterSoilType')}
                     placeholderTextColor="#999"
                     value={formData.soilType}
                     onChangeText={(value) => handleInputChange('soilType', value)}
@@ -260,14 +262,14 @@ export default function SignUpScreen() {
               {/* OTP Field */}
               {otpSent && (
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>OTP *</Text>
+                  <Text style={styles.inputLabel}>{t('enterOTP').toUpperCase()} *</Text>
                   <View style={styles.inputContainer}>
                     <View style={styles.inputIconContainer}>
                       <Shield size={20} color="#4CAF50" />
                     </View>
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter OTP"
+                      placeholder={t('enterOTP')}
                       placeholderTextColor="#999"
                       value={formData.otp}
                       onChangeText={(value) => handleInputChange('otp', value)}
@@ -298,14 +300,14 @@ export default function SignUpScreen() {
               activeOpacity={0.8}
             >
               <Text style={styles.submitButtonText}>
-                {loading ? 'Creating Account...' : 'CREATE ACCOUNT'}
+                {loading ? t('loading') : t('signup').toUpperCase()}
               </Text>
             </TouchableOpacity>
             
             {/* Login Link */}
             <TouchableOpacity onPress={() => router.push('/auth/login')} style={styles.loginContainer}>
               <Text style={styles.loginText}>
-                Already have an account? <Text style={styles.loginLink}>Login</Text>
+                {t('alreadyHaveAccount')} <Text style={styles.loginLink}>{t('login')}</Text>
               </Text>
             </TouchableOpacity>
           </View>

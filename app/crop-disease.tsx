@@ -13,6 +13,7 @@ import {
   Dimensions,
   Easing,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -57,6 +58,7 @@ interface AIDiagnosis {
 }
 
 export default function CropDiseaseDetectionScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [isScanning, setIsScanning] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -489,9 +491,9 @@ export default function CropDiseaseDetectionScreen() {
           </TouchableOpacity>
           
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Crop Disease Detection</Text>
+            <Text style={styles.headerTitle}>{t('cropDisease.title')}</Text>
             <Text style={styles.headerSubtitle}>
-              Upload or scan a crop image to detect possible diseases instantly
+              {t('cropDisease.scanCrop')}
             </Text>
           </View>
           
@@ -598,7 +600,7 @@ export default function CropDiseaseDetectionScreen() {
                       }
                     ]} />
                   </View>
-                  <Text style={styles.scanningText}>Analyzing image with AI...</Text>
+                  <Text style={styles.scanningText}>{t('cropDisease.analyzing')}</Text>
                   <Text style={styles.scanningSubtext}>Detecting diseases and providing solutions</Text>
                   
                   {/* Enhanced scanning visualization */}

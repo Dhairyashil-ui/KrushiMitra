@@ -16,8 +16,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Lock } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 export default function OTPScreen() {
+  const { t } = useTranslation();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -413,7 +415,7 @@ export default function OTPScreen() {
       if (pendingUser) {
         userData = JSON.parse(pendingUser);
       } else if (pendingPhone) {
-        userData = { phoneNumber: pendingPhone, name: 'User' };
+        userData = { phoneNumber: pendingPhone, name: t('profile.title') };
       }
 
       // Store user session
@@ -431,12 +433,12 @@ export default function OTPScreen() {
       }, 1500);
     } catch (error) {
       setIsLoading(false);
-      Alert.alert('🔴 NEURAL ERROR', 'Quantum verification failed. Reinitializing neural sequence...');
+      Alert.alert(t('otp.neuralError'), t('otp.quantumVerificationFailed'));
     }
   };
 
   const resendOTP = () => {
-    Alert.alert('📡 NEURAL TRANSMISSION', 'New quantum verification sequence transmitted to your neural interface');
+    Alert.alert(t('otp.neuralTransmission'), t('otp.quantumVerificationTransmitted'));
     setOtp(['', '', '', '', '', '']);
     setFocusedIndex(-1);
   };
@@ -512,11 +514,11 @@ export default function OTPScreen() {
                   { transform: [{ scale: titleScale }] }
                 ]}
               >
-                ⚡ NEURAL VERIFICATION
+                ⚡ {t('otp.neuralVerification')}
               </Animated.Text>
               
               <Text style={styles.subtitle}>
-                Enter the 6-digit quantum verification sequence transmitted to your neural interface
+                {t('otp.neuralSubtitle')}
               </Text>
               
               <Animated.View style={[styles.energyBar, { width: energyWidth }]} />
@@ -525,7 +527,7 @@ export default function OTPScreen() {
             <View style={styles.otpSection}>
               <View style={styles.otpLabel}>
                 <Lock size={16} color="#00F5FF" />
-                <Text style={styles.otpLabelText}>QUANTUM SEQUENCE</Text>
+                <Text style={styles.otpLabelText}>{t('otp.quantumSequence')}</Text>
               </View>
               
               <View style={styles.otpContainer}>
@@ -566,12 +568,12 @@ export default function OTPScreen() {
                           { transform: [{ rotate: '360deg' }] }
                         ]} 
                       />
-                      <Text style={styles.verifyButtonText}>PROCESSING NEURAL SEQUENCE...</Text>
+                      <Text style={styles.verifyButtonText}>{t('otp.processingNeuralSequence')}</Text>
                     </View>
                   )}
                   {!isLoading && (
                     <Text style={styles.verifyButtonText}>
-                      VERIFY NEURAL SEQUENCE
+                      {t('otp.verifyNeuralSequence')}
                     </Text>
                   )}
                 </View>
@@ -583,10 +585,10 @@ export default function OTPScreen() {
                 colors={['rgba(0, 245, 255, 0.1)', 'rgba(0, 128, 255, 0.1)', 'rgba(65, 105, 225, 0.1)']}
                 style={styles.footerGradient}
               >
-                <Text style={styles.resendText}>Neural sequence not received? </Text>
+                <Text style={styles.resendText}>{t('otp.neuralSequenceNotReceived')} </Text>
                 <TouchableOpacity style={styles.resendContainer} onPress={resendOTP}>
                   <Lock size={12} color="#00ff88" />
-                  <Text style={styles.resendLink}>RETRANSMIT</Text>
+                  <Text style={styles.resendLink}>{t('otp.retransmit')}</Text>
                 </TouchableOpacity>
               </LinearGradient>
             </View>

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Tex
 import { LinearGradient } from 'expo-linear-gradient';
 import { Send, Bot, User, Sparkles, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   id: string;
@@ -23,10 +24,11 @@ const demoResponses: Record<string, string> = {
 };
 
 export default function AIChatScreen() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hello! I\'m your KrushiAi farming assistant. I can help you with crop care, weather updates, pest control, and farming advice. What would you like to know?',
+      text: t('aiChat.welcomeMessage'),
       isUser: false,
       timestamp: new Date(),
     },
@@ -62,7 +64,7 @@ export default function AIChatScreen() {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (permissionResult.granted === false) {
-        Alert.alert('Permission required', 'Permission to access camera roll is required to upload images.');
+        Alert.alert(t('aiChat.permissionRequired'), t('aiChat.cameraPermissionMessage'));
         return;
       }
       
@@ -85,7 +87,7 @@ export default function AIChatScreen() {
         // Create image message
         const imageMessage: Message = {
           id: Date.now().toString(),
-          text: 'Image uploaded for crop analysis',
+          text: t('aiChat.imageUploadedForAnalysis'),
           isUser: true,
           timestamp: new Date(),
           image: selectedImage,
@@ -100,7 +102,7 @@ export default function AIChatScreen() {
           setIsTyping(false);
           const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
-            text: 'Thanks for uploading the image. I can see potential signs of crop disease. I recommend applying neem oil spray and improving drainage around the affected plants.',
+            text: t('aiChat.imageAnalysisResponse'),
             isUser: false,
             timestamp: new Date(),
           };
@@ -109,7 +111,7 @@ export default function AIChatScreen() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      Alert.alert(t('aiChat.errorTitle'), t('aiChat.imagePickerError'));
       setIsUploading(false);
     }
   };
@@ -129,7 +131,7 @@ export default function AIChatScreen() {
 
     // Find appropriate response
     const query = inputText.toLowerCase();
-    let response = 'I understand your question about farming. While I\'m in demo mode, I can help with weather updates, crop care, pest control, fertilizer advice, and irrigation tips. Please ask about specific farming topics!';
+    let response = t('aiChat.defaultResponse');
 
     for (const [key, value] of Object.entries(demoResponses)) {
       if (query.includes(key)) {
@@ -323,25 +325,25 @@ export default function AIChatScreen() {
       </View>
 
       <View style={styles.suggestionsContainer}>
-        <Text style={styles.suggestionsTitle}>Quick Questions:</Text>
+        <Text style={styles.suggestionsTitle}>{t('aiChat.quickSuggestions.title') || 'Quick Questions:'}</Text>
         <View style={styles.suggestionsRow}>
           <TouchableOpacity
             style={styles.suggestionChip}
-            onPress={() => setInputText('What should I do today?')}
+            onPress={() => setInputText(t('aiChat.quickSuggestions.whatToDo'))}
           >
-            <Text style={styles.suggestionText}>Today's Tasks</Text>
+            <Text style={styles.suggestionText}>{t('aiChat.quickSuggestions.todaysTasks') || 'Today\'s Tasks'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.suggestionChip}
-            onPress={() => setInputText('Weather forecast')}
+            onPress={() => setInputText(t('aiChat.quickSuggestions.weatherForecast'))}
           >
-            <Text style={styles.suggestionText}>Weather</Text>
+            <Text style={styles.suggestionText}>{t('common.weather') || 'Weather'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.suggestionChip}
-            onPress={() => setInputText('Pest control tips')}
+            onPress={() => setInputText(t('aiChat.quickSuggestions.pestControlTips'))}
           >
-            <Text style={styles.suggestionText}>Pest Control</Text>
+            <Text style={styles.suggestionText}>{t('aiChat.suggestions.pestControl') || 'Pest Control'}</Text>
           </TouchableOpacity>
         </View>
       </View>

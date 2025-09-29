@@ -17,11 +17,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Phone, Shield, Sparkles, User, Mic, MicOff } from 'lucide-react-native';
 import PageTransition from '@/components/PageTransition';
 import { replaceWithTransition } from '@/src/utils/navigation';
-// Import speech recognition and text-to-speech libraries
+// Import speech recognition for voice input
 import Voice from '@react-native-voice/voice';
-import * as Speech from 'expo-speech';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [showOtpField, setShowOtpField] = useState(false);
@@ -41,7 +42,7 @@ export default function LoginScreen() {
     if (Platform.OS === 'web') {
       console.error(msg);
     } else {
-      Alert.alert("Error", msg);
+      Alert.alert(t('error'), msg);
     }
   };
 
@@ -223,7 +224,7 @@ export default function LoginScreen() {
         recognitionRef.current.onerror = (event: any) => {
           console.error('Speech recognition error', event.error);
           setIsListening(false);
-          showError('There was an error with speech recognition. Please try again.');
+          showError(t('somethingWentWrong'));
         };
         
         recognitionRef.current.onend = () => {
@@ -260,86 +261,20 @@ export default function LoginScreen() {
       Voice.onSpeechError = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
-        showError('There was an error with speech recognition. Please try again.');
+        showError(t('somethingWentWrong'));
       };
     }
   };
 
   const speakPrompt = () => {
-    console.log('Attempting to speak prompt');
+    console.log('Login prompt - using ONLY Niraj Hindi voice from 11labs');
+    // ONLY use 11labs Niraj Hindi voice - NO device TTS fallbacks
+    // User explicitly requested ONLY Niraj Hindi voice
     
-    const message = "Please tell me your phone number";
-    
-    if (Platform.OS === 'web') {
-      // Web implementation
-      if ('speechSynthesis' in window) {
-        const synth = window.speechSynthesis;
-        
-        // Cancel any ongoing speech
-        synth.cancel();
-        
-        const utterance = new SpeechSynthesisUtterance(message);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        utterance.onend = () => {
-          console.log('Speech synthesis finished');
-          // Add a small delay before starting listening
-          setTimeout(() => {
-            startListening();
-          }, 500);
-        };
-        
-        utterance.onerror = (event) => {
-          console.error('Speech synthesis error:', event);
-          // Still start listening even if speech fails, with delay
-          setTimeout(() => {
-            startListening();
-          }, 500);
-        };
-        
-        try {
-          console.log('Speaking prompt:', message);
-          synth.speak(utterance);
-        } catch (error) {
-          console.error('Error speaking:', error);
-          setTimeout(() => {
-            startListening();
-          }, 500);
-        }
-      } else {
-        console.warn('Speech synthesis not supported in this browser');
-        setTimeout(() => {
-          startListening();
-        }, 500);
-      }
-    } else {
-      // Mobile implementation using expo-speech
-      console.log('Using expo-speech for mobile');
-      
-      const options = {
-        language: 'en-US',
-        pitch: 1.0,
-        rate: 0.9,
-        volume: 1.0,
-        onDone: () => {
-          console.log('Speech synthesis finished');
-          setTimeout(() => {
-            startListening();
-          }, 500);
-        },
-        onError: (error: any) => {
-          console.error('Speech synthesis error:', error);
-          setTimeout(() => {
-            startListening();
-          }, 500);
-        }
-      };
-      
-      console.log('Speaking prompt:', message);
-      Speech.speak(message, options);
-    }
+    // Start listening directly without device TTS
+    setTimeout(() => {
+      startListening();
+    }, 500);
   };
 
   const startListening = () => {
@@ -354,10 +289,10 @@ export default function LoginScreen() {
           setIsListening(true);
         } catch (error) {
           console.error('Error starting speech recognition:', error);
-          showError('Could not start voice recognition. Please ensure your browser supports it and you have given microphone permissions.');
+        showError(t('somethingWentWrong'));
         }
       } else {
-        showError('Voice recognition is only available on web platform.');
+        showError(t('somethingWentWrong'));
       }
     } else {
       // Mobile implementation using react-native-voice
@@ -366,7 +301,7 @@ export default function LoginScreen() {
         Voice.start('en-US');
       } catch (error) {
         console.error('Error starting speech recognition:', error);
-        showError('Please allow microphone access in your device settings to use voice recognition.');
+        showError(t('somethingWentWrong'));
       }
     }
   };
@@ -414,7 +349,7 @@ export default function LoginScreen() {
         }, 1000);
       } else {
         console.log('Could not extract a valid phone number from voice input');
-        Alert.alert('Error', 'Could not extract a valid phone number from your voice input. Please try again.');
+        Alert.alert(t('error'), t('invalidPhoneNumber'));
       }
     }
   };
@@ -422,7 +357,7 @@ export default function LoginScreen() {
   // OTP and Login Functions
   const handleSendOtp = async () => {
     if (!phoneNumber || phoneNumber.length !== 10) {
-      Alert.alert('Error', 'Please enter a valid 10-digit phone number');
+      Alert.alert(t('error'), t('invalidPhoneNumber'));
       return;
     }
 
@@ -450,7 +385,7 @@ export default function LoginScreen() {
     console.log('Sending OTP for number:', number);
     
     if (!number || number.length !== 10) {
-      Alert.alert('Error', 'Please provide a valid 10-digit phone number');
+      Alert.alert(t('error'), t('invalidPhoneNumber'));
       return;
     }
 
@@ -479,7 +414,7 @@ export default function LoginScreen() {
     
     if (!phoneNumber || !otp) {
       console.log('Login validation failed - missing data');
-      Alert.alert('Error', 'Please enter both phone number and OTP');
+      Alert.alert(t('error'), t('enterOTP'));
       return;
     }
 
@@ -572,7 +507,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
               
               <View style={styles.topCenter}>
-                <Text style={styles.topTitle}>Login</Text>
+                <Text style={styles.topTitle}>{t('login')}</Text>
               </View>
               
               {/* Microphone Button */}
@@ -634,21 +569,21 @@ export default function LoginScreen() {
                 {/* AI Badge */}
                 <View style={styles.aiBadge}>
                   <Sparkles size={16} color="#FFFFFF" />
-                  <Text style={styles.aiBadgeText}>AI Powered</Text>
+                  <Text style={styles.aiBadgeText}>{t('aiPowered')}</Text>
                 </View>
               </Animated.View>
               
               {/* Welcome Section */}
               <View style={styles.welcomeSection}>
-                <Text style={styles.welcomeTitle}>Welcome Back</Text>
-                <Text style={styles.welcomeSubtitle}>Log into your farming account</Text>
+                <Text style={styles.welcomeTitle}>{t('welcomeBack')}</Text>
+                <Text style={styles.welcomeSubtitle}>{t('loginSubtitle')}</Text>
               </View>
               
               {/* Middle Section - Form */}
               <View style={styles.formSection}>
                 {/* Phone Number Input with Send OTP Button */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>PHONE NUMBER</Text>
+                  <Text style={styles.inputLabel}>{t('phoneNumber')}</Text>
                   <View style={styles.phoneInputRow}>
                     <View style={styles.phoneInputContainer}>
                       <View style={styles.inputIconContainer}>
@@ -658,7 +593,7 @@ export default function LoginScreen() {
                         style={styles.input}
                         value={phoneNumber}
                         onChangeText={setPhoneNumber}
-                        placeholder="Enter Mobile Number"
+                        placeholder={t('enterPhoneNumber')}
                         placeholderTextColor="#999"
                         keyboardType="phone-pad"
                         maxLength={10}
@@ -674,7 +609,7 @@ export default function LoginScreen() {
                       activeOpacity={0.8}
                     >
                       <Text style={styles.otpButtonText}>
-                        {otpLoading ? 'Sending...' : 'Send OTP'}
+                        {otpLoading ? t('loading') : t('getOTP')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -683,7 +618,7 @@ export default function LoginScreen() {
                 {/* OTP Input */}
                 {showOtpField && (
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>OTP</Text>
+                    <Text style={styles.inputLabel}>{t('enterOTP')}</Text>
                     <View style={styles.inputContainer}>
                       <View style={styles.inputIconContainer}>
                         <Shield size={20} color="#4CAF50" />
@@ -692,7 +627,7 @@ export default function LoginScreen() {
                         style={styles.input}
                         value={otp}
                         onChangeText={setOtp}
-                        placeholder="Enter OTP"
+                        placeholder={t('enterOTP')}
                         placeholderTextColor="#999"
                         keyboardType="numeric"
                         maxLength={6}
@@ -716,14 +651,14 @@ export default function LoginScreen() {
                   activeOpacity={0.8}
                 >
                   <Text style={styles.loginButtonText}>
-                    {loading ? 'LOGGING IN...' : 'LOG IN'}
+                    {loading ? t('loading') : t('login')}
                   </Text>
                 </TouchableOpacity>
                 
                 {/* Sign Up Link */}
                 <TouchableOpacity onPress={handleSignUp} style={styles.signUpContainer}>
                   <Text style={styles.signUpText}>
-                    Don't have an account? <Text style={styles.signUpLink}>Sign Up</Text>
+                    {t('dontHaveAccount')} <Text style={styles.signUpLink}>{t('signup')}</Text>
                   </Text>
                 </TouchableOpacity>
               </View>

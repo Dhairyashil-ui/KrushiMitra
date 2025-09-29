@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Modal, Animated, Alert, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Audio } from 'expo-av';
 import { 
   Bot, 
   Activity, 
@@ -22,16 +24,25 @@ import {
   Thermometer,
   Mic,
   MicOff,
-  Leaf
+  Leaf,
+  Pause,
+  Play
 } from 'lucide-react-native';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { queryOllama, queryOllamaStream } from '@/src/utils/ollama';
 import { saveAIInteraction } from '@/src/utils/api'; // Correct import path
+
+// API base URL for 11labs TTS
+// API Configuration - LAN IP for mobile device connectivity
+// For mobile devices, use your computer's LAN IP instead of localhost
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000';
+console.log('API_BASE_URL configured as:', API_BASE_URL);
 
 // Add a simple rate limiting mechanism
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 10; // Maximum 10 requests per minute
+const MAX_REQUESTS_PER_WINDOW = 10;
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const [userData, setUserData] = useState<any>(null);
   const [weather, setWeather] = useState('🌤️ Partly cloudy, 28°C');
   const [reminder, setReminder] = useState('🌧️ Rain expected tomorrow, avoid spraying pesticides');
@@ -44,6 +55,7 @@ export default function HomeScreen() {
   const [pulseAnimation] = useState(new Animated.Value(1));
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<{role: string, parts: string}[]>([]);
   const [audioLevel] = useState(new Animated.Value(1)); // For audio visualization
   const [lastRequestTimes, setLastRequestTimes] = useState<number[]>([]); // For rate limiting
@@ -51,26 +63,19 @@ export default function HomeScreen() {
     remainingRequests: MAX_REQUESTS_PER_WINDOW,
     resetTime: 0
   });
+  const [isProcessing, setIsProcessing] = useState(false);
+  let debounceTimeout: any; // Change from NodeJS.Timeout | undefined to any
   
   const router = useRouter();
   const recognitionRef = useRef<any>(null);
-  const genAIRef = useRef<any>(null);
-  const modelRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const errorRestartTimeoutRef = useRef<number | null>(null);
+  const ollamaServerIp = process.env.EXPO_PUBLIC_OLLAMA_SERVER_IP || '127.0.0.1';
+  console.log('Ollama server IP configured as:', ollamaServerIp);
 
-  // Initialize Gemini AI
-  useEffect(() => {
-    try {
-      // Get API key from environment variable (in a real app, this should come from a secure backend service)
-      const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "AIzaSyB9D42GOeezcrEPQLMUvF4MmM3O6sJfmuw"; // Fallback for demo
-      genAIRef.current = new GoogleGenerativeAI(API_KEY);
-      modelRef.current = genAIRef.current.getGenerativeModel({ model: "gemini-2.5-flash" });
-    } catch (error) {
-      console.error("Error initializing Gemini AI:", error);
-    }
-  }, []);
+  // No Gemini initialization needed when using Ollama
 
   // Initialize speech recognition
   useEffect(() => {
@@ -84,18 +89,60 @@ export default function HomeScreen() {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = false;
-        recognitionRef.current.lang = 'en-IN-NeerjaNeural';
+        // Use a valid BCP-47 language tag; voice selection is for TTS, not STT
+        recognitionRef.current.lang = 'en-IN';
         
         recognitionRef.current.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          setIsListening(false);
-          handleVoiceInput(transcript);
+          // SEQUENTIAL VOICE PROCESSING: Only accept input when completely ready
+          // STOP listening immediately when system is busy to prevent audio capture
+          if (isSpeaking || isProcessing) {
+            console.log('Voice input ignored - system busy (speaking or processing complete response cycle)');
+            stopListening(); // Ensure recognition is stopped
+            return;
+          }
+          
+          debounceTimeout = setTimeout(() => {
+            const alt = event.results[0][0];
+            const transcript = alt?.transcript ?? '';
+            const confidence = typeof alt?.confidence === 'number' ? alt.confidence : undefined;
+            
+            // ONLY process final results with good recognition
+            if (event.results[0].isFinal) {
+              setIsListening(false);
+              
+              // Enhanced speech recognition validation
+              if (isValidSpeechInput(transcript, confidence)) {
+                console.log('Valid speech recognized:', { transcript, confidence });
+                handleVoiceInput(transcript, confidence);
+              } else {
+                console.log('Invalid speech ignored:', { transcript, confidence });
+                // Auto-restart listening for next valid input
+                setTimeout(() => {
+                  if (!isSpeaking && !isProcessing) {
+                    startListening();
+                  }
+                }, 1000);
+              }
+            }
+          }, 500);
         };
         
         recognitionRef.current.onerror = (event: any) => {
           console.error('Speech recognition error', event.error);
           setIsListening(false);
+          // Attempt a gentle auto-retry on transient errors ONLY when system is not busy
+          if (event?.error === 'network' || event?.error === 'no-speech' || event?.error === 'audio-capture') {
+            if (errorRestartTimeoutRef.current) {
+              clearTimeout(errorRestartTimeoutRef.current);
+            }
+            errorRestartTimeoutRef.current = setTimeout(() => {
+              if (Platform.OS === 'web' && !isSpeaking && !isProcessing) {
+                startListening();
+              }
+            }, 1500) as unknown as number;
+          } else {
           Alert.alert('Speech Recognition Error', 'There was an error with speech recognition. Please try again.');
+          }
         };
         
         recognitionRef.current.onend = () => {
@@ -217,6 +264,10 @@ export default function HomeScreen() {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+      if (errorRestartTimeoutRef.current) {
+        clearTimeout(errorRestartTimeoutRef.current);
+        errorRestartTimeoutRef.current = null;
+      }
       
       // Clean up speaking animation
       stopSpeakingAnimation();
@@ -303,10 +354,27 @@ export default function HomeScreen() {
   };
 
   const startListening = () => {
+    // Ensure speech recognition is completely stopped before starting new session
+    if (recognitionRef.current?.abort) {
+      recognitionRef.current.abort();
+    }
+    
+    if (isSpeaking || isProcessing) {
+      console.warn('Voice capture disabled - system busy (complete response cycle in progress)');
+      return;
+    }
     if (Platform.OS === 'web' && recognitionRef.current) {
       try {
+        // Request mic permission first to avoid network/audio-capture errors
+        navigator.mediaDevices?.getUserMedia?.({ audio: true })
+          .then(() => {
         recognitionRef.current.start();
         setIsListening(true);
+          })
+          .catch((permErr) => {
+            console.error('Microphone permission error:', permErr);
+            Alert.alert('Microphone Access Needed', 'Please allow microphone access to use voice features.');
+          });
       } catch (error) {
         console.error('Error starting speech recognition:', error);
         Alert.alert('Error', 'Could not start voice recognition. Please ensure your browser supports it and you have given microphone permissions.');
@@ -316,98 +384,149 @@ export default function HomeScreen() {
     }
   };
 
+  // Enhanced speech recognition validation - only pass valid speech to LLM
+  // SEQUENTIAL PROCESSING FLOW:
+  // 1. Voice Input → Validation → LLM Processing (isProcessing=true)
+  // 2. LLM Response → TTS Playback (isSpeaking=true, isProcessing=true) 
+  // 3. TTS Complete → Reset flags → Auto-restart listening
+  // NO voice input accepted during steps 1-3
+  const isValidSpeechInput = (text: string, confidence?: number): boolean => {
+    if (!text || !text.trim()) {
+      console.log('Empty speech input');
+      return false;
+    }
+    
+    // Remove punctuation and normalize
+    const normalized = text.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+    
+    // Length validation
+    if (normalized.length < 2) {
+      console.log('Speech too short:', normalized);
+      return false;
+    }
+    
+    // Pattern validation
+    const repeatedChar = /(..)\1{2,}/.test(normalized); // e.g., "aaaa", "haha"
+    const vowelsOnly = /^[aeiou\s]+$/i.test(normalized); // likely hums
+    const noAlpha = !/[a-zA-Z]/.test(normalized); // no actual words
+    
+    if (repeatedChar || vowelsOnly || noAlpha) {
+      console.log('Invalid speech pattern:', { normalized, repeatedChar, vowelsOnly, noAlpha });
+      return false;
+    }
+    
+    // Confidence validation (if provided)
+    if (typeof confidence === 'number' && confidence > 0 && confidence < 0.5) {
+      console.log('Low confidence speech:', { text: normalized, confidence });
+      return false;
+    }
+    
+    // Common noise words/sounds to ignore
+    const noisePatterns = [
+      /^(uh|um|ah|hmm|er|eh)$/i,
+      /^(la|na|da|ba|wa)$/i,
+      /^[aeiou]{1,3}$/i
+    ];
+    
+    for (const pattern of noisePatterns) {
+      if (pattern.test(normalized)) {
+        console.log('Noise pattern detected:', normalized);
+        return false;
+      }
+    }
+    
+    console.log('Valid speech input validated:', { text: normalized, confidence });
+    return true;
+  };
+
   const stopListening = () => {
     if (Platform.OS === 'web' && recognitionRef.current) {
-      recognitionRef.current.stop();
+      // Use abort for immediate stop, fallback to stop
+      if (recognitionRef.current.abort) {
+        recognitionRef.current.abort();
+      } else {
+        recognitionRef.current.stop();
+      }
       setIsListening(false);
     }
   };
 
-  const speakResponse = (text: string, autoStartListening: boolean = false) => {
-    if (Platform.OS === 'web' && 'speechSynthesis' in window) {
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
+  const speakResponse = async (text: string, autoStartListening: boolean = false) => {
+    // SEQUENTIAL PROCESSING: Ensure we are not listening while speaking
+    stopListening();
+    setIsSpeaking(true);
+    setIsProcessing(true); // Block new inputs during TTS
+    // Start a more dynamic animation when speaking begins
+    startSpeakingAnimation();
+    
+    try {
+      // ONLY use 11labs Niraj voice from backend - NO FALLBACKS
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false });
       
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.voice = window.speechSynthesis.getVoices().find(voice => voice.lang.includes('en')) || null;
-      utterance.rate = 1.5; // Increased from 1.0 to 1.5 for faster speech
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
+      // Call backend TTS endpoint with ONLY Niraj Hindi voice
+      const ttsUrl = `${API_BASE_URL}/tts?lang=hi&text=${encodeURIComponent(text)}`;
+      console.log('Calling TTS endpoint:', ttsUrl);
       
-      // Simulate audio waveform based on speech synthesis events
-      utterance.onstart = () => {
-        setIsSpeaking(true);
-        // Start a more dynamic animation when speaking begins
-        startSpeakingAnimation();
-      };
+      const { sound } = await Audio.Sound.createAsync({ uri: ttsUrl }, { shouldPlay: true });
       
-      utterance.onend = () => {
-        stopSpeakingAnimation();
-        setIsSpeaking(false);
-        // Auto-start listening again after speaking only if explicitly requested
-        if (autoStartListening) {
-          setTimeout(() => {
-            startListening();
-          }, 1000);
+      // Handle playback completion - SEQUENTIAL: Only allow next input after TTS finishes
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if ('didJustFinish' in status && status.didJustFinish) {
+          sound.unloadAsync();
+          stopSpeakingAnimation();
+          setIsSpeaking(false);
+          setIsProcessing(false); // Release processing lock after TTS completion
+          
+          console.log('TTS completed - ready for next voice input');
+          
+          // Auto-start listening for next input only if explicitly requested AND TTS completed
+          if (autoStartListening) {
+            setTimeout(() => {
+              if (!isSpeaking && !isProcessing) {
+                console.log('Auto-starting listening after TTS completion');
+                startListening();
+              }
+            }, 1000);
+          }
         }
-      };
-      
-      utterance.onerror = (event) => {
-        stopSpeakingAnimation();
-        console.error('Speech synthesis error:', event);
-        setIsSpeaking(false);
-        // Auto-start listening again after speaking only if explicitly requested
-        if (autoStartListening) {
-          setTimeout(() => {
-            if (Platform.OS === 'web') {
-              startListening();
-            }
-          }, 1000);
+        if ('error' in status && status.error) {
+          console.error('Niraj voice audio playback error:', status.error);
+          stopSpeakingAnimation();
+          setIsSpeaking(false);
+          setIsProcessing(false); // Release processing lock on error
+          
+          if (autoStartListening) {
+            setTimeout(() => {
+              if (!isSpeaking && !isProcessing) {
+                startListening();
+              }
+            }, 1000);
+          }
         }
-      };
+      });
+    } catch (error) {
+      console.error('Niraj voice TTS error details:', error);
+      console.error('TTS URL attempted:', `${API_BASE_URL}/tts`);
+      console.error('Error type:', error instanceof Error ? error.name : typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
       
-      // Add boundary events for more granular control
-      utterance.onboundary = (event) => {
-        // Adjust animation based on speech boundaries
-        if (event.name === 'word') {
-          // Create a small pulse for each word
-          Animated.sequence([
-            Animated.timing(audioLevel, {
-              toValue: 1.1 + Math.random() * 0.2, // Random value between 1.1 and 1.3
-              duration: 80,
-              useNativeDriver: true,
-            }),
-            Animated.timing(audioLevel, {
-              toValue: 1.0 + Math.random() * 0.1, // Random value between 1.0 and 1.1
-              duration: 100,
-              useNativeDriver: true,
-            })
-          ]).start();
-        } else if (event.name === 'sentence') {
-          // Create a more pronounced pulse for each sentence
-          Animated.sequence([
-            Animated.timing(audioLevel, {
-              toValue: 1.2 + Math.random() * 0.3, // Random value between 1.2 and 1.5
-              duration: 150,
-              useNativeDriver: true,
-            }),
-            Animated.timing(audioLevel, {
-              toValue: 1.0,
-              duration: 200,
-              useNativeDriver: true,
-            })
-          ]).start();
-        }
-      };
-      
-      window.speechSynthesis.speak(utterance);
-    } else {
-      console.warn('Speech synthesis not supported on this platform');
+      stopSpeakingAnimation();
       setIsSpeaking(false);
-      // Auto-start listening again after speaking only if explicitly requested
+      setIsProcessing(false); // Release processing lock on error
+      
+      // Provide helpful error message for connection issues
+      if (error instanceof Error && (error.message.includes('Network request failed') || error.message.includes('Failed to load'))) {
+        console.warn('TTS Backend Connection Error: Make sure the backend server is running and accessible');
+        console.warn('1. Backend should be running on port 3000');
+        console.warn('2. For mobile devices, use LAN IP instead of localhost');
+        console.warn('3. Both devices must be on the same WiFi network');
+      }
+      
+      // NO FALLBACK - Only Niraj voice allowed
+      
       if (autoStartListening) {
         setTimeout(() => {
-          if (Platform.OS === 'web') {
+          if (!isSpeaking && !isProcessing) {
             startListening();
           }
         }, 1000);
@@ -415,81 +534,108 @@ export default function HomeScreen() {
     }
   };
 
-  const handleVoiceInput = async (text: string) => {
-    if (!text.trim()) return;
+
+  const handleVoiceInput = async (text: string, confidence?: number) => {
+    // SEQUENTIAL PROCESSING: Block concurrent voice inputs during entire response cycle
+    if (isSpeaking) {
+      console.log('Currently speaking via TTS, ignoring voice input');
+      return;
+    }
+
+    if (isProcessing) {
+      console.log('Currently processing previous request, ignoring voice input');
+      return;
+    }
+    
+    // Additional validation for recognized speech - only pass valid speech to LLM
+    if (!isValidSpeechInput(text, confidence)) {
+      console.log('Invalid speech input, ignoring and restarting listening');
+      // Restart listening for next valid input
+      setTimeout(() => {
+        if (!isSpeaking && !isProcessing) {
+          startListening();
+        }
+      }, 1000);
+      return;
+    }
+    
+    console.log('Processing valid voice input:', { text, confidence });
+    
+    // SEQUENTIAL: Block ALL new voice inputs until complete response cycle finishes
+    setIsProcessing(true);
+    stopListening(); // Ensure speech recognition is stopped during processing
     
     try {
       // Add user message to conversation history
       const updatedHistory = [...conversationHistory, { role: "user", parts: text }];
       setConversationHistory(updatedHistory);
       
-      // Check for navigation commands first
+      // Navigation commands - all with sequential TTS processing
       const lowerText = text.toLowerCase();
       
-      // Navigation commands
       if (lowerText.includes('open crop') || lowerText.includes('crop disease') || lowerText.includes('crop page')) {
         navigateToCropDisease();
-        speakResponse("Opening crop disease detection page", true);
+        speakResponse("फसल रोग पहचान पेज खोल रहे हैं", true);
         return;
       }
       
       if (lowerText.includes('open events') || lowerText.includes('events page')) {
         router.push('/events');
-        speakResponse("Opening events page", true);
+        speakResponse("कार्यक्रम पेज खोल रहे हैं", true);
         return;
       }
       
       if (lowerText.includes('open profile') || lowerText.includes('profile page')) {
         router.push('/profile');
-        speakResponse("Opening profile page", true);
+        speakResponse("प्रोफाइल पेज खोल रहे हैं", true);
         return;
       }
       
       if (lowerText.includes('open community') || lowerText.includes('community page')) {
         router.push('/community');
-        speakResponse("Opening community page", true);
+        speakResponse("समुदाय पेज खोल रहे हैं", true);
         return;
       }
       
       if (lowerText.includes('open activity') || lowerText.includes('activity tracking')) {
         navigateToActivityTracking();
-        speakResponse("Opening activity tracking page", true);
+        speakResponse("गतिविधि ट्रैकिंग पेज खोल रहे हैं", true);
         return;
       }
       
       if (lowerText.includes('open chat') || lowerText.includes('ai chat')) {
         router.push('/ai-chat');
-        speakResponse("Opening AI chat", true);
+        speakResponse("एआई चैट खोल रहे हैं", true);
         return;
       }
       
       if (lowerText.includes('open government schemes') || lowerText.includes('schemes page')) {
         navigateToSchemes();
-        speakResponse("Opening schemes page, Based on your profile, I recommend applying for the PM Kisan Samman Nidhi scheme. This provides direct income support of ₹6,000 per year to small and marginal farmers like yourself.", true);
+        speakResponse("सरकारी योजना पेज खोल रहे हैं। आपकी प्रोफाइल के अनुसार, मैं पीएम किसान सम्मान निधि योजना के लिए आवेदन करने की सलाह देता हूं। यह आपके जैसे छोटे और सीमांत किसानों को प्रति वर्ष ₹6,000 की प्रत्यक्ष आय सहायता प्रदान करती है।", true);
         return;
       }
       
       if (lowerText.includes('open mandi prices') || lowerText.includes('mandi prices page')) {
         navigateToMandiPrices();
-        speakResponse("Opening mandi prices page", true);
+        speakResponse("मंडी भाव पेज खोल रहे हैं", true);
         return;
       }
       
       if (lowerText.includes('open news') || lowerText.includes('farming news')) {
         navigateToNews();
-        speakResponse("Opening farming news page", true);
+        speakResponse("खेती समाचार पेज खोल रहे हैं", true);
         return;
       }
       
       if (lowerText.includes('open carbosafe') || lowerText.includes('carbosafe page')) {
         navigateToCarboSafe();
-        speakResponse("Opening carbosafe page", true);
+        speakResponse("कार्बोसेफ पेज खोल रहे हैं", true);
         return;
       }
 
       // Rate limiting check
       const now = Date.now();
-      const recentRequests = lastRequestTimes.filter(time => now - time < RATE_LIMIT_WINDOW);
+      const recentRequests = lastRequestTimes.filter((time: number) => now - time < RATE_LIMIT_WINDOW);
       const remainingRequests = MAX_REQUESTS_PER_WINDOW - recentRequests.length;
       const resetTime = now + RATE_LIMIT_WINDOW;
       
@@ -502,8 +648,10 @@ export default function HomeScreen() {
       if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
         console.warn('Rate limit exceeded: Too many requests in a short time');
         const timeUntilReset = formatTimeUntilReset(rateLimitStatus.resetTime);
-        const rateLimitMessage = `You've reached the limit of ${MAX_REQUESTS_PER_WINDOW} requests per minute. Please wait ${timeUntilReset} before trying again.`;
-        speakResponse(rateLimitMessage);
+        const rateLimitMessage = `आपने एक मिनट में ${MAX_REQUESTS_PER_WINDOW} अनुरोधों की सीमा पार कर ली है। कृपया ${timeUntilReset} प्रतीक्षा करें और फिर कोशिश करें।`;
+        // SEQUENTIAL: Speak rate limit message with Niraj voice and auto-restart listening
+        // Note: isProcessing will be released when TTS completes
+        speakResponse(rateLimitMessage, true);
         setConversationHistory([...updatedHistory, { role: "model", parts: rateLimitMessage }]);
         return;
       }
@@ -517,63 +665,37 @@ export default function HomeScreen() {
         resetTime
       });
 
-      // Show that we're processing for general queries
-      setIsSpeaking(true);
+      // Process general queries with LLM - keep isProcessing true throughout
+      console.log('Querying LLM for response, blocking all new voice inputs...');
       
-      // Generate response using Gemini for general queries with retry logic
-      if (modelRef.current) {
-        const prompt = `You are KrushiAI, an intelligent farming assistant. Provide helpful, concise responses to farming questions. 
-        User query: ${text}
+      // Generate response using Ollama (LLaMA 3) with sequential TTS processing
+      try {
+        const prompt = `You are KrushiAI, an intelligent farming assistant. Provide helpful, concise responses to farming questions in Hindi language only. you are best friend of farmers\nyou are very cool and you are female${text}\nRespond in a friendly, helpful manner with farming-specific advice in Hindi. Use simple Hindi words that farmers can easily understand.`;
+
+        let finalResponse = '';
         
-        Respond in a friendly, helpful manner with farming-specific advice.`;
+        // SEQUENTIAL PROCESSING: Get complete response first, then speak with Niraj voice
+        for await (const chunk of queryOllamaStream(prompt, ollamaServerIp)) {
+          finalResponse += chunk;
+        }
+
+        console.log('LLM response received, now speaking with Niraj Hindi voice only');
         
-        try {
-          // Exponential backoff retry mechanism for handling 429 errors
-          let retryCount = 0;
-          const maxRetries = 3;
-          const baseDelay = 1000; // 1 second
+        // SEQUENTIAL: Speak complete response with Niraj voice and auto-restart listening
+        // Note: isProcessing remains true until TTS completes
+        speakResponse(finalResponse.trim(), true);
           
-          const getResultWithRetry = async (): Promise<any> => {
-            try {
-              return await modelRef.current.generateContent(prompt);
-            } catch (error: any) {
-              // Check if it's a rate limit error (429)
-              if ((error?.status === 429 || error?.message?.includes('429')) && retryCount < maxRetries) {
-                retryCount++;
-                const delay = baseDelay * Math.pow(2, retryCount); // Exponential backoff
-                console.warn(`Rate limit hit. Retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`);
-                
-                // Wait for the delay
-                await new Promise(resolve => setTimeout(resolve, delay));
-                
-                // Retry
-                return getResultWithRetry();
-              } else {
-                // Re-throw the error if it's not a rate limit error or we've exhausted retries
-                throw error;
-              }
-            }
-          };
-          
-          const result = await getResultWithRetry();
-          const response = await result.response;
-          const responseText = response.text();
-          
-          // Speak the response
-          speakResponse(responseText, true);
-          
-          // Add AI response to conversation history
-          setConversationHistory([...updatedHistory, { role: "model", parts: responseText }]);
+        // Add AI response to conversation history
+        setConversationHistory([...updatedHistory, { role: "model", parts: finalResponse }]);
           
           // Save interaction to MongoDB
           try {
             const interactionSaved = await saveAIInteraction({
               farmerId: userData?.id || userData?.phone || 'anonymous',
               query: text,
-              response: responseText,
-              context: {}
+            response: finalResponse,
+            context: { provider: 'ollama', model: 'llama3', streamed: true }
             });
-            
             if (interactionSaved) {
               console.log('AI interaction saved successfully to MongoDB');
             } else {
@@ -582,70 +704,30 @@ export default function HomeScreen() {
           } catch (error) {
             console.error('Error saving interaction to MongoDB:', error);
           }
-          
-          // Speak the response
-          speakResponse(responseText);
         } catch (apiError: any) {
-          // Handle 429 rate limit error specifically
-          if (apiError?.status === 429 || apiError?.message?.includes('429')) {
-            console.error('Rate limit exceeded for Gemini API:', apiError);
-            const rateLimitMessage = "I'm currently experiencing high demand. Please wait a moment and try again. You can also try rephrasing your question or check back in a few minutes.";
-            speakResponse(rateLimitMessage, true);
-            setConversationHistory([...updatedHistory, { role: "model", parts: rateLimitMessage }]);
-          } else {
-            // Handle other API errors
-            console.error('Error with Gemini API:', apiError);
-            const errorMessage = "I'm having trouble processing your request right now. Please try again in a moment.";
-            speakResponse(errorMessage);
-            setConversationHistory([...updatedHistory, { role: "model", parts: errorMessage }]);
-          }
-          
-          // Still try to save the interaction to MongoDB
-          try {
-            const interactionSaved = await saveAIInteraction({
+          console.error('Error calling Ollama:', apiError);
+          const errorMessage = 'ओलामा से अभी जुड़ाव नहीं हो पा रहा। कृपया बाद में पुनः प्रयास करें।';
+          // SEQUENTIAL: Speak error with Niraj voice and auto-restart listening
+          // Note: isProcessing will be released when TTS completes
+          speakResponse(errorMessage, true);
+          setConversationHistory([...updatedHistory, { role: 'model', parts: errorMessage }]);
+        // Save error interaction
+        try {
+          await saveAIInteraction({
               farmerId: userData?.id || userData?.phone || 'anonymous',
               query: text,
-              response: "API Error: Rate limit exceeded or service unavailable",
-              context: { error: apiError?.message || 'Unknown error' }
-            });
-            
-            if (interactionSaved) {
-              console.log('AI interaction error saved successfully to MongoDB');
-            } else {
-              console.warn('Failed to save AI interaction error to MongoDB');
-            }
-          } catch (error) {
-            console.error('Error saving interaction error to MongoDB:', error);
-          }
-        }
-      } else {
-        const fallbackResponse = "I'm your KrushiAI farming assistant. I can help with crop care, weather updates, pest control, and farming advice. What would you like to know?";
-        
-        // Save fallback response to MongoDB
-        try {
-          const interactionSaved = await saveAIInteraction({
-            farmerId: userData?.id || userData?.phone || 'anonymous',
-            query: text,
-            response: fallbackResponse,
-            context: {}
+            response: 'API Error: Ollama unreachable',
+            context: { error: apiError?.message || 'Unknown error', provider: 'ollama' }
           });
-          
-          if (interactionSaved) {
-            console.log('AI interaction saved successfully to MongoDB');
-          } else {
-            console.warn('Failed to save AI interaction to MongoDB');
-          }
-        } catch (error) {
-          console.error('Error saving interaction to MongoDB:', error);
+        } catch (e) {
+          console.error('Error saving interaction error to MongoDB:', e);
         }
-        
-        speakResponse(fallbackResponse);
-        setConversationHistory([...updatedHistory, { role: "model", parts: fallbackResponse }]);
       }
     } catch (error) {
       console.error('Error processing voice input:', error);
-      const errorMessage = "Sorry, I encountered an error processing your request. Please try again.";
-      speakResponse(errorMessage);
+      const errorMessage = "खेद है, आपके अनुरोध को संसाधित करने में त्रुटि हुई। कृपया पुनः प्रयास करें।";
+      // SEQUENTIAL: Speak error with Niraj voice and auto-restart listening
+      speakResponse(errorMessage, true);
     }
   };
 
@@ -744,11 +826,27 @@ export default function HomeScreen() {
   };
 
   const toggleVoiceAssistant = () => {
+    if (isPaused) {
+      setIsPaused(false);
+      return;
+    }
+    
     if (isListening) {
       stopListening();
     } else {
       startListening();
     }
+  };
+
+  const handlePause = () => {
+    if (isListening) {
+      stopListening();
+    }
+    if (isSpeaking) {
+      // NO device TTS cleanup - user explicitly requested ONLY Niraj Hindi voice
+      setIsSpeaking(false);
+    }
+    setIsPaused(true);
   };
 
   const formatTimeUntilReset = (resetTime: number): string => {
@@ -774,10 +872,10 @@ export default function HomeScreen() {
           </TouchableOpacity>
           
           <View style={styles.headerCenter}>
-            <Text style={styles.appTitle}>KrushiMitra</Text>
+            <Text style={styles.appTitle}>{t('homeScreen.appTitle')}</Text>
             <View style={styles.locationRow}>
               <MapPin size={14} color="#6B7280" />
-              <Text style={styles.locationText}>Pune, Maharashtra</Text>
+              <Text style={styles.locationText}>{t('homeScreen.location')}</Text>
             </View>
           </View>
           
@@ -785,7 +883,7 @@ export default function HomeScreen() {
             <View style={styles.notificationContainer}>
               <Bell size={24} color="#1F2937" />
               <View style={styles.notificationBadge}>
-                <Text style={styles.badgeText}>3</Text>
+                <Text style={styles.badgeText}>{t('homeScreen.notifications')}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -794,9 +892,9 @@ export default function HomeScreen() {
         {/* Greeting Section */}
         <View style={styles.greetingSection}>
           <Text style={styles.greetingText}>
-            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}
+            {t(new Date().getHours() < 12 ? 'greetings.goodMorning' : new Date().getHours() < 17 ? 'greetings.goodAfternoon' : 'greetings.goodEvening')}
           </Text>
-          <Text style={styles.userName}>{userData?.name || 'Farmer'} </Text>
+          <Text style={styles.userName}>{userData?.name || t('greetings.farmer')} </Text>
         </View>
 
         {/* AI Assistant - Futuristic Centered Circle */}
@@ -906,12 +1004,14 @@ export default function HomeScreen() {
                         })
                       }
                     ]}>
-                      {isListening ? "Listening..." : isSpeaking ? "Speaking..." : "Neural Interface Active"}
+                      {isPaused ? "Paused" : isListening ? t('aiAssistant.listening') : isSpeaking ? t('aiAssistant.speaking') : t('aiAssistant.neuralInterface')}
                     </Animated.Text>
                     
                     {/* Mic Icon for Voice Control */}
                     <View style={styles.micIconContainer}>
-                      {isListening ? (
+                      {isPaused ? (
+                        <Play size={24} color="#FFFFFF" />
+                      ) : isListening ? (
                         <MicOff size={24} color="#FFFFFF" />
                       ) : (
                         <Mic size={24} color="#FFFFFF" />
@@ -1012,6 +1112,22 @@ export default function HomeScreen() {
             }
           ]} />
         </View>
+
+        {/* Pause Control Button */}
+        {!isPaused && (isListening || isSpeaking) && (
+          <TouchableOpacity 
+            style={styles.pauseButton}
+            onPress={handlePause}
+            activeOpacity={0.7}
+          >
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.7)']}
+              style={styles.pauseButtonGradient}
+            >
+              <Pause size={16} color="#4CAF50" />
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
         {/* Professional Light-Themed Weather Forecast */}
         <View style={styles.weatherForecastContainer}>
@@ -1146,7 +1262,7 @@ export default function HomeScreen() {
               style={styles.forecastCardGradient}
             >
               <View style={styles.forecastHeader}>
-                <Text style={styles.forecastTitle}>7-Day Forecast</Text>
+                <Text style={styles.forecastTitle}>{t('weather.weekTitle')}</Text>
                 <View style={[styles.forecastBadge, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                   <Text style={[styles.forecastBadgeText, { color: '#4CAF50' }]}>WEEK</Text>
                 </View>
@@ -1296,7 +1412,7 @@ export default function HomeScreen() {
 
         {/* Service Sections - Rectangular Cards */}
         <View style={styles.servicesContainer}>
-          <Text style={styles.sectionTitle}>Agricultural Services</Text>
+          <Text style={styles.sectionTitle}>{t('home.agriculturalServices')}</Text>
           
           {/* Row 1: Crop Disease Detection & Farmer Activity */}
           <View style={styles.serviceRow}>
@@ -1313,8 +1429,8 @@ export default function HomeScreen() {
                     <View style={styles.activeIndicator} />
                   </Animated.View>
                 </View>
-                <Text style={styles.serviceTitle}>Crop Disease Detection</Text>
-                <Text style={styles.serviceDescription}>Upload crop images for instant AI diagnosis</Text>
+                <Text style={styles.serviceTitle}>{t('service.cropDisease.title')}</Text>
+                <Text style={styles.serviceDescription}>{t('service.cropDisease.desc')}</Text>
               </LinearGradient>
             </TouchableOpacity>
             
@@ -1328,8 +1444,8 @@ export default function HomeScreen() {
                     <Activity size={24} color="#22C55E" />
                   </View>
                 </View>
-                <Text style={styles.serviceTitle}>Activity Tracking</Text>
-                <Text style={styles.serviceDescription}>Log and monitor farming activities</Text>
+                <Text style={styles.serviceTitle}>{t('service.activity.title')}</Text>
+                <Text style={styles.serviceDescription}>{t('service.activity.desc')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -1346,8 +1462,8 @@ export default function HomeScreen() {
                     <Calendar size={24} color="#3B82F6" />
                   </View>
                 </View>
-                <Text style={styles.serviceTitle}>Government Schemes</Text>
-                <Text style={styles.serviceDescription}>Explore subsidies and benefits</Text>
+                <Text style={styles.serviceTitle}>{t('service.schemes.title')}</Text>
+                <Text style={styles.serviceDescription}>{t('service.schemes.desc')}</Text>
               </LinearGradient>
             </TouchableOpacity>
             
@@ -1364,8 +1480,8 @@ export default function HomeScreen() {
                     <Text style={styles.liveText}>LIVE</Text>
                   </View>
                 </View>
-                <Text style={styles.serviceTitle}>Mandi Prices</Text>
-                <Text style={styles.serviceDescription}>Real-time crop market prices</Text>
+                <Text style={styles.serviceTitle}>{t('service.mandi.title')}</Text>
+                <Text style={styles.serviceDescription}>{t('service.mandi.desc')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -1385,8 +1501,8 @@ export default function HomeScreen() {
                     <Text style={styles.newsText}>TODAY</Text>
                   </View>
                 </View>
-                <Text style={styles.serviceTitle}>Farming News</Text>
-                <Text style={styles.serviceDescription}>Latest agricultural updates</Text>
+                <Text style={styles.serviceTitle}>{t('service.news.title')}</Text>
+                <Text style={styles.serviceDescription}>{t('service.news.desc')}</Text>
               </LinearGradient>
             </TouchableOpacity>
             
@@ -1403,8 +1519,8 @@ export default function HomeScreen() {
                     <Text style={styles.carbonText}>EARN</Text>
                   </View>
                 </View>
-                <Text style={styles.serviceTitle}>CarboSafe</Text>
-                <Text style={styles.serviceDescription}>Earn credits from green farming</Text>
+                <Text style={styles.serviceTitle}>{t('service.carbosafe.title')}</Text>
+                <Text style={styles.serviceDescription}>{t('service.carbosafe.desc')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -2715,6 +2831,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  // Pause Button Styles
+  pauseButton: {
+    position: 'absolute',
+    top: '50%',
+    right: 30,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  pauseButtonGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.2)',
   },
 });
 

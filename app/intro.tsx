@@ -10,33 +10,33 @@ const introSlides = [
   {
     id: 1,
     icon: '🤖',
-    title: 'AI Assistant',
-    description: 'Get smart farming advice powered by artificial intelligence',
+    title: 'AI सहायक',
+    description: 'कृत्रिम बुद्धिमत्ता द्वारा संचालित स्मार्ट खेती की सलाह प्राप्त करें',
   },
   {
     
     id: 2,
     icon: '🔍',
-    title: 'Crop Disease Detection',
-    description: 'Identify diseases and pests early with image recognition',
+    title: 'फसल रोग पहचान',
+    description: 'छवि पहचान के साथ रोगों और कीटों की जल्दी पहचान करें',
   },
   {
     id: 3,
     icon: '🌤️',
-    title: 'Weather Alerts',
-    description: 'Stay informed with real-time weather updates and forecasts',
+    title: 'मौसम अलर्ट',
+    description: 'वास्तविक समय के मौसम अपडेट और पूर्वानुमान के साथ जानकारी रखें',
   },
   {
     id: 4,
     icon: '🌱',
-    title: 'Crop Care',
-    description: 'Get expert advice on crop disease detection and treatment',
+    title: 'फसल देखभाल',
+    description: 'फसल रोग की पहचान और उपचार पर विशेषज्ञ सलाह प्राप्त करें',
   },
   {
     id: 5,
     icon: '📊',
-    title: 'Activity Tracker',
-    description: 'Track your farming activities and maintain records',
+    title: 'गतिविधि ट्रैकर',
+    description: 'अपनी खेती की गतिविधियों को ट्रैक करें और रिकॉर्ड बनाए रखें',
   },
 ];
 
@@ -61,7 +61,7 @@ export default function IntroScreen() {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-        <Text style={styles.skipText}>Skip</Text>
+        <Text style={styles.skipText}>छोड़ें</Text>
       </TouchableOpacity>
 
       <PagerView
@@ -93,7 +93,7 @@ export default function IntroScreen() {
 
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
-            {currentPage === introSlides.length - 1 ? 'Get Started' : 'Next'}
+            {currentPage === introSlides.length - 1 ? 'शुरू करें' : 'आगे'}
           </Text>
         </TouchableOpacity>
       </View>

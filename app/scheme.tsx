@@ -254,9 +254,8 @@ export default function GovernmentSchemesScreen() {
     }
     
     return () => {
-      if (utteranceRef.current) {
-        window.speechSynthesis.cancel();
-      }
+      // NO device TTS cleanup - user explicitly requested ONLY Niraj Hindi voice
+      console.log('Cleanup - NO device TTS to cancel since user requested ONLY Niraj Hindi voice');
     };
   }, [showDemo]);
 
@@ -325,14 +324,18 @@ export default function GovernmentSchemesScreen() {
     setAiRecommendations(recommendations);
   };
 
-  // Start the demo animation and speech
+  // Start the demo - using ONLY Niraj Hindi voice from 11labs
   const startDemo = () => {
+    console.log('Scheme demo - using ONLY Niraj Hindi voice from 11labs');
+    // ONLY use 11labs Niraj Hindi voice - NO device TTS fallbacks
+    // User explicitly requested ONLY Niraj Hindi voice
+    
     // Reset states
     setDemoText('');
     setIsSpeaking(true);
     lastSpokenIndex.current = 0;
     
-    // Start typing animation
+    // Start typing animation without device TTS
     typingAnimation.setValue(0);
     
     Animated.timing(typingAnimation, {
@@ -340,19 +343,9 @@ export default function GovernmentSchemesScreen() {
       duration: typingText.length * 50, // Adjust speed as needed
       useNativeDriver: false,
     }).start(() => {
-      // Animation completed
+      // Animation completed - NO device TTS
       setIsSpeaking(false);
     });
-    
-    // Start speech synthesis
-    if (Platform.OS === 'web' && 'speechSynthesis' in window) {
-      // We'll handle speech synthesis in the text update listener
-    } else {
-      // Fallback for non-web platforms
-      setTimeout(() => {
-        setIsSpeaking(false);
-      }, typingText.length * 50);
-    }
   };
 
   // Filter schemes based on search query and category
@@ -383,42 +376,15 @@ export default function GovernmentSchemesScreen() {
     return schemes.find(scheme => scheme.id === id);
   };
 
-  // Subscribe to animation updates
+  // Subscribe to animation updates - NO device TTS
   useEffect(() => {
     const listenerId = typingAnimation.addListener(({ value }) => {
       const currentIndex = Math.floor(value);
       const newText = typingText.substring(0, currentIndex);
       setDemoText(newText);
       
-      // Speak each word as it's typed
-      if (Platform.OS === 'web' && 'speechSynthesis' in window) {
-        const words = newText.split(' ');
-        const lastWords = typingText.substring(0, lastSpokenIndex.current).split(' ');
-        
-        // Check if we have a new word to speak
-        if (words.length > lastWords.length && currentIndex > lastSpokenIndex.current) {
-          const newWord = words[words.length - 1];
-          if (newWord && newWord.trim() !== '') {
-            const utterance = new SpeechSynthesisUtterance(newWord);
-            utterance.rate = 1.0;
-            utterance.pitch = 1.0;
-            utterance.volume = 1.0;
-            
-            utterance.onend = () => {
-              utteranceRef.current = null;
-            };
-            
-            utterance.onerror = () => {
-              utteranceRef.current = null;
-            };
-            
-            window.speechSynthesis.speak(utterance);
-            utteranceRef.current = utterance;
-          }
-        }
-        
-        lastSpokenIndex.current = currentIndex;
-      }
+      // NO device TTS - user explicitly requested ONLY Niraj Hindi voice
+      lastSpokenIndex.current = currentIndex;
     });
     
     return () => {

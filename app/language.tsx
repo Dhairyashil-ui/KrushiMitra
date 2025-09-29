@@ -17,18 +17,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Wheat, CheckCircle, ArrowLeft, Sparkles, Mic, MicOff } from 'lucide-react-native';
 import PageTransition from '@/components/PageTransition';
 import { replaceWithTransition } from '@/src/utils/navigation';
-// Import speech recognition and text-to-speech libraries
+import { changeLanguage as i18nChangeLanguage } from '@/i18n';
+import { useLanguage } from '@/src/context/LanguageContext';
+// Import speech recognition for voice input
 import Voice from '@react-native-voice/voice';
-import * as Speech from 'expo-speech';
-
-const languages = [
-  { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
-  { code: 'en', name: 'English', nativeName: 'English' },
-];
 
 export default function LanguageScreen() {
-  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const { currentLanguage, changeLanguage, availableLanguages } = useLanguage();
+  const [selectedLanguage, setSelectedLanguage] = useState('hi');
   const [isListening, setIsListening] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const fadeAnimation = useRef(new Animated.Value(0)).current;
@@ -44,7 +40,7 @@ export default function LanguageScreen() {
     if (Platform.OS === 'web') {
       console.error(msg);
     } else {
-      Alert.alert("Error", msg);
+      Alert.alert("त्रुटि", msg);
     }
   };
 
@@ -266,96 +262,14 @@ export default function LanguageScreen() {
   };
 
   const speakWelcomeAndPrompt = () => {
-    console.log('Attempting to speak welcome message');
+    console.log('Welcome message - using ONLY Niraj Hindi voice from 11labs');
+    // ONLY use 11labs Niraj Hindi voice - NO device TTS fallbacks
+    // User explicitly requested ONLY Niraj Hindi voice
     
-    const message = "Welcome to KrushiMitra. What language do you prefer?";
-    
-    if (Platform.OS === 'web') {
-      // Web implementation
-      if ('speechSynthesis' in window) {
-        const synth = window.speechSynthesis;
-        
-        // Cancel any ongoing speech
-        synth.cancel();
-        
-        // Try different voices
-        const voices = synth.getVoices();
-        const englishVoices = voices.filter(voice => voice.lang.includes('en'));
-        const preferredVoice = englishVoices.find(voice => voice.default) || englishVoices[0] || voices[0];
-        
-        const utterance = new SpeechSynthesisUtterance(message);
-        utterance.rate = 0.9; // Slightly slower for clarity
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
-        }
-        
-        utterance.onstart = () => {
-          console.log('Speech synthesis started with voice:', preferredVoice ? preferredVoice.name : 'default');
-        };
-        
-        utterance.onend = () => {
-          console.log('Speech synthesis finished');
-          // Add a small delay before starting listening
-          setTimeout(() => {
-            startListening();
-          }, 500); // 500ms delay
-        };
-        
-        utterance.onerror = (event) => {
-          console.error('Speech synthesis error:', event);
-          // Still start listening even if speech fails, with delay
-          setTimeout(() => {
-            startListening();
-          }, 500); // 500ms delay
-        };
-        
-        // Try speaking immediately
-        try {
-          synth.speak(utterance);
-        } catch (error) {
-          console.error('Error speaking:', error);
-          // Fallback: start listening directly with delay
-          setTimeout(() => {
-            startListening();
-          }, 500); // 500ms delay
-        }
-      } else {
-        console.warn('Speech synthesis not supported in this browser');
-        // Start listening immediately if speech is not supported, with delay
-        setTimeout(() => {
-          startListening();
-        }, 500); // 500ms delay
-      }
-    } else {
-      // Mobile implementation using expo-speech
-      console.log('Using expo-speech for mobile');
-      
-      const options = {
-        language: 'en-US',
-        pitch: 1.0,
-        rate: 0.9,
-        volume: 1.0,
-        onDone: () => {
-          console.log('Speech synthesis finished');
-          // Add a small delay before starting listening
-          setTimeout(() => {
-            startListening();
-          }, 500); // 500ms delay
-        },
-        onError: (error: any) => {
-          console.error('Speech synthesis error:', error);
-          // Add delay even if speech fails
-          setTimeout(() => {
-            startListening();
-          }, 500); // 500ms delay
-        }
-      };
-      
-      Speech.speak(message, options);
-    }
+    // Start listening directly without device TTS
+    setTimeout(() => {
+      startListening();
+    }, 500);
   };
 
   const startListening = () => {
@@ -434,7 +348,8 @@ export default function LanguageScreen() {
     if (!languageCode) return;
     
     try {
-      await AsyncStorage.setItem('selectedLanguage', languageCode);
+      // Use the context's changeLanguage function
+      await changeLanguage(languageCode);
       
       // Trigger transition before navigation
       setTransitioning(true);
@@ -447,7 +362,8 @@ export default function LanguageScreen() {
     if (!selectedLanguage) return;
     
     try {
-      await AsyncStorage.setItem('selectedLanguage', selectedLanguage);
+      // Use the context's changeLanguage function
+      await changeLanguage(selectedLanguage);
       
       // Trigger transition before navigation
       setTransitioning(true);
@@ -572,7 +488,7 @@ export default function LanguageScreen() {
           {/* Language Options Section */}
           <ScrollView style={styles.languageScrollContainer} showsVerticalScrollIndicator={false}>
             <View style={styles.languagesContainer}>
-              {languages.map((language) => (
+              {availableLanguages.map((language) => (
                 <TouchableOpacity
                   key={language.code}
                   style={[

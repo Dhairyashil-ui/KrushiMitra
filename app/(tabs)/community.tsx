@@ -18,6 +18,7 @@ import {
   StatusBar,
   PanResponder
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera as ExpoCamera, CameraType } from 'expo-camera';
@@ -86,6 +87,7 @@ import {
 const { width } = Dimensions.get('window');
 
 export default function CommunityScreen({ navigation, route }: any) {
+  const { t } = useTranslation();
   // Safe navigation hooks with fallbacks
   const nav = useNavigation();
   const currentRoute = useRoute();
@@ -131,7 +133,7 @@ export default function CommunityScreen({ navigation, route }: any) {
   const [showPollModal, setShowPollModal] = useState(false);
   const [showCropSolver, setShowCropSolver] = useState(false);
   const [userPoints, setUserPoints] = useState(1250);
-  const [userBadges, setUserBadges] = useState(['Early Adopter', 'Helpful Farmer', 'Photo Expert']);
+  const [userBadges, setUserBadges] = useState([t('community.userBadges.earlyAdopter'), t('community.userBadges.helpfulFarmer'), t('community.userBadges.photoExpert')]);
   
   // Camera states
   const [showCamera, setShowCamera] = useState(false);
@@ -199,7 +201,7 @@ export default function CommunityScreen({ navigation, route }: any) {
       // Request audio recording permissions
       const audioPermission = await Audio.requestPermissionsAsync();
       if (audioPermission.status !== 'granted') {
-        Alert.alert('Permission required', 'Audio recording permission is required to record voice posts.');
+        Alert.alert(t('community.permissions.required'), t('community.permissions.audioRecording'));
       }
     };
 
@@ -296,12 +298,12 @@ export default function CommunityScreen({ navigation, route }: any) {
       author: 'Ramesh Patil',
       location: 'Pune, Maharashtra',
       time: '2 hours ago',
-      content: 'Great harvest this season! My tomato yield increased by 40% using the new fertilizer technique shared in this community. Thanks everyone! 🍅',
+      content: t('community.posts.samplePost1'),
       likes: 24,
       comments: 8,
       shares: 3,
       image: null,
-      category: 'Success Story',
+      category: t('community.categories.successStory'),
       type: 'farmer',
       verified: true,
       trending: true
@@ -311,12 +313,12 @@ export default function CommunityScreen({ navigation, route }: any) {
       author: 'Dr. Priya Sharma',
       location: 'Agricultural Expert',
       time: '5 hours ago',
-      content: 'Drip irrigation for cotton crops: Cost analysis shows 30% water savings and 25% yield increase. Initial setup cost ₹50,000/acre but ROI in 2 seasons.',
+      content: t('community.posts.samplePost2'),
       likes: 45,
       comments: 23,
       shares: 12,
       image: null,
-      category: 'Expert Advice',
+      category: t('community.categories.expertAdvice'),
       type: 'expert',
       verified: true,
       trending: false
@@ -326,12 +328,12 @@ export default function CommunityScreen({ navigation, route }: any) {
       author: 'AI Assistant',
       location: 'KrushiMitra AI',
       time: '1 hour ago',
-      content: 'Weather Alert: Heavy rains expected in Maharashtra region. Recommended actions: 1) Cover crops with tarpaulins 2) Check drainage systems 3) Harvest ready crops early.',
+      content: t('community.posts.samplePost3'),
       likes: 67,
       comments: 15,
       shares: 28,
       image: null,
-      category: 'AI Alert',
+      category: t('community.categories.aiAlert'),
       type: 'ai',
       verified: true,
       trending: true
@@ -341,12 +343,12 @@ export default function CommunityScreen({ navigation, route }: any) {
       author: 'Suresh Kumar',
       location: 'Solapur, Maharashtra',
       time: '3 hours ago',
-      content: 'Found these spots on my wheat leaves. Can anyone help identify the disease?',
+      content: t('community.posts.samplePost4'),
       likes: 12,
       comments: 8,
       shares: 2,
       image: 'https://example.com/wheat-disease.jpg',
-      category: 'Crop Problem',
+      category: t('community.categories.cropProblem'),
       type: 'farmer',
       verified: false,
       trending: false,
@@ -357,27 +359,27 @@ export default function CommunityScreen({ navigation, route }: any) {
   const expertQA = [
     {
       id: 1,
-      question: 'Best time to plant rice in Maharashtra?',
+      question: t('community.expertQA.question1'),
       expert: 'Dr. Rajesh Patil',
-      answer: 'Plant rice between June 15-30 for optimal yield. Soil temperature should be 25-30°C.',
+      answer: t('community.expertQA.answer1'),
       likes: 34,
-      aiSummary: 'Expert recommends mid-June planting with specific temperature requirements.'
+      aiSummary: t('community.expertQA.aiSummary1')
     },
     {
       id: 2,
-      question: 'How to control aphids organically?',
+      question: t('community.expertQA.question2'),
       expert: 'Dr. Meera Singh',
-      answer: 'Use neem oil spray (2ml/liter) every 7 days. Introduce ladybugs as natural predators.',
+      answer: t('community.expertQA.answer2'),
       likes: 28,
-      aiSummary: 'Organic control using neem oil and beneficial insects.'
+      aiSummary: t('community.expertQA.aiSummary2')
     }
   ];
 
   const polls = [
     {
       id: 1,
-      question: 'Which crop gives best profit this season?',
-      options: ['Tomato', 'Cotton', 'Sugarcane', 'Wheat'],
+      question: t('community.polls.question1'),
+      options: t('community.polls.options1'),
       votes: [45, 32, 28, 15],
       totalVotes: 120,
       timeLeft: '2 days',
@@ -385,8 +387,8 @@ export default function CommunityScreen({ navigation, route }: any) {
     },
     {
       id: 2,
-      question: 'Most effective irrigation method?',
-      options: ['Drip', 'Sprinkler', 'Flood', 'Manual'],
+      question: t('community.polls.question2'),
+      options: t('community.polls.options2'),
       votes: [67, 23, 18, 12],
       totalVotes: 120,
       timeLeft: '5 days',
@@ -397,20 +399,20 @@ export default function CommunityScreen({ navigation, route }: any) {
   const events = [
     {
       id: 1,
-      title: 'Organic Farming Workshop',
+      title: t('community.events.organicWorkshop'),
       date: '2024-02-15',
       time: '10:00 AM',
-      location: 'Pune Agricultural Center',
+      location: t('community.events.location1'),
       attendees: 45,
       countdown: '3 days',
       type: 'workshop'
     },
     {
       id: 2,
-      title: 'Seed Distribution Drive',
+      title: t('community.events.seedDistribution'),
       date: '2024-02-20',
       time: '9:00 AM',
-      location: 'Nashik District Office',
+      location: t('community.events.location2'),
       attendees: 120,
       countdown: '8 days',
       type: 'distribution'
@@ -420,28 +422,28 @@ export default function CommunityScreen({ navigation, route }: any) {
   const aiTips = [
     {
       id: 1,
-      title: 'Soil Testing Before Planting',
-      content: 'Test soil pH and nutrients 2 weeks before planting. Optimal pH: 6.0-7.0 for most crops.',
-      category: 'Soil Management',
+      title: t('community.aiTips.soilTesting.title'),
+      content: t('community.aiTips.soilTesting.content'),
+      category: t('community.aiTips.soilTesting.category'),
       bookmarked: false,
       aiGenerated: true
     },
     {
       id: 2,
-      title: 'Water Conservation Tips',
-      content: 'Mulch around plants to retain moisture. Use drip irrigation for 40% water savings.',
-      category: 'Water Management',
+      title: t('community.aiTips.waterConservation.title'),
+      content: t('community.aiTips.waterConservation.content'),
+      category: t('community.aiTips.waterConservation.category'),
       bookmarked: true,
       aiGenerated: true
     }
   ];
 
   const leaderboard = [
-    { rank: 1, name: 'Ramesh Patil', points: 2450, badge: 'Expert Farmer' },
-    { rank: 2, name: 'Priya Sharma', points: 2100, badge: 'Helpful Expert' },
-    { rank: 3, name: 'Suresh Kumar', points: 1850, badge: 'Active Member' },
-    { rank: 4, name: 'Meera Singh', points: 1650, badge: 'Photo Expert' },
-    { rank: 5, name: 'Rajesh Patil', points: 1500, badge: 'Early Adopter' }
+    { rank: 1, name: 'Ramesh Patil', points: 2450, badge: t('community.userBadges.expertFarmer') },
+    { rank: 2, name: 'Priya Sharma', points: 2100, badge: t('community.userBadges.helpfulExpert') },
+    { rank: 3, name: 'Suresh Kumar', points: 1850, badge: t('community.userBadges.activeMember') },
+    { rank: 4, name: 'Meera Singh', points: 1650, badge: t('community.userBadges.photoExpert') },
+    { rank: 5, name: 'Rajesh Patil', points: 1500, badge: t('community.userBadges.earlyAdopter') }
   ];
 
   // Helper functions
@@ -510,7 +512,7 @@ export default function CommunityScreen({ navigation, route }: any) {
       }
     } catch (error) {
       console.error('Error with audio recording:', error);
-      Alert.alert('Recording Error', `Failed to ${isRecording ? 'stop' : 'start'} recording. Please try again.`);
+      Alert.alert(t('community.actions.recordingError'), t('community.actions.recordingErrorMessage', { action: isRecording ? 'stop' : 'start' }));
       
       // Reset state on error
       setIsRecording(false);
@@ -537,7 +539,7 @@ export default function CommunityScreen({ navigation, route }: any) {
       }
     } catch (error) {
       console.error('Error playing audio:', error);
-      Alert.alert('Playback Error', 'Failed to play audio.');
+      Alert.alert(t('community.actions.playbackError'), t('community.actions.playbackErrorMessage'));
     }
   };
 
@@ -559,13 +561,13 @@ export default function CommunityScreen({ navigation, route }: any) {
         console.log('Posting voice message:', recordedAudio);
         
         // Show loading state (you could add a loading indicator here)
-        Alert.alert('Posting...', 'Uploading your voice message...');
+        Alert.alert(t('community.actions.posting'), t('community.actions.uploadingVoice'));
         
         // Simulate upload delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Simulate successful post
-        Alert.alert('Success!', 'Your voice message has been posted to the community!', [
+        Alert.alert(t('common.success'), t('community.actions.voicePosted'), [
           {
             text: 'OK',
             onPress: () => {
@@ -579,11 +581,11 @@ export default function CommunityScreen({ navigation, route }: any) {
           }
         ]);
       } else {
-        Alert.alert('No Recording', 'Please record a voice message first.');
+        Alert.alert(t('community.actions.noRecording'), t('community.actions.recordFirst'));
       }
     } catch (error) {
       console.error('Error posting voice message:', error);
-      Alert.alert('Posting Error', 'Failed to post voice message. Please try again.');
+      Alert.alert(t('community.actions.postingError'), t('community.actions.postFailed'));
     }
   };
 
@@ -655,7 +657,7 @@ export default function CommunityScreen({ navigation, route }: any) {
       setShowCamera(false);
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to capture photo');
+      Alert.alert(t('common.error'), t('community.camera.captureError'));
     }
   };
 
@@ -678,7 +680,7 @@ export default function CommunityScreen({ navigation, route }: any) {
         setIsRecordingVideo(false);
       } catch (error) {
         console.error('Error stopping video:', error);
-        Alert.alert('Error', 'Failed to stop video recording');
+        Alert.alert(t('common.error'), t('community.camera.stopVideoError'));
       }
     } else {
       // Start recording
@@ -690,7 +692,7 @@ export default function CommunityScreen({ navigation, route }: any) {
         });
       } catch (error) {
         console.error('Error starting video:', error);
-        Alert.alert('Error', 'Failed to start video recording');
+        Alert.alert(t('common.error'), t('community.camera.startVideoError'));
         setIsRecordingVideo(false);
       }
     }
@@ -733,7 +735,7 @@ export default function CommunityScreen({ navigation, route }: any) {
       }
     } catch (error) {
       console.error('Error accessing gallery:', error);
-      Alert.alert('Error', 'Failed to access gallery');
+      Alert.alert(t('common.error'), t('community.actions.galleryError'));
     }
   };
 
@@ -881,7 +883,7 @@ export default function CommunityScreen({ navigation, route }: any) {
               <View style={styles.helpOverlay}>
                 <TouchableOpacity style={styles.analyzeButton} onPress={handleCropAnalysis}>
                   <Eye size={16} color="#FFFFFF" />
-                  <Text style={styles.analyzeText}>Analyze with AI</Text>
+                  <Text style={styles.analyzeText}>{t('community.camera.analyzeWithAI')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1157,7 +1159,7 @@ export default function CommunityScreen({ navigation, route }: any) {
               >
                 <TextInput
                   style={styles.postInput}
-                  placeholder="What's happening in your farm today?"
+                  placeholder={t('community.createPost.placeholder')}
                   value={newPost}
                   onChangeText={setNewPost}
                   multiline

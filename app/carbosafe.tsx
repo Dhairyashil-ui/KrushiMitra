@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { 
   ArrowLeft,
   MapPin,
@@ -29,6 +30,7 @@ import {
 } from 'lucide-react-native';
 
 export default function CarboSafeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [selectedPractice, setSelectedPractice] = useState<string>('');
   const [showEstimate, setShowEstimate] = useState(false);
@@ -90,8 +92,8 @@ export default function CarboSafeScreen() {
             <ArrowLeft size={24} color="#1F2937" />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>🌱 CarboSafe</Text>
-            <Text style={styles.headerSubtitle}>Turn Green Actions into Income</Text>
+            <Text style={styles.headerTitle}>🌱 {t('carboSafe.title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('carboSafe.earnCredits')}</Text>
           </View>
         </View>
 

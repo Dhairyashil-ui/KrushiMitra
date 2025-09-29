@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, TextInput, Modal, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const [userData, setUserData] = useState<any>({
     name: 'Ramesh Patil',
     phoneNumber: '9876543210',
@@ -71,12 +73,12 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
+      t('profile.logout'),
       'Are you sure you want to logout?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Logout',
+          text: t('profile.logout'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -118,7 +120,7 @@ export default function ProfileScreen() {
   const menuItems = [
     {
       id: 'language',
-      title: 'Language Settings',
+      title: t('profile.language'),
       subtitle: selectedLanguage,
       icon: Globe,
       color: '#4CAF50',
@@ -127,7 +129,7 @@ export default function ProfileScreen() {
     },
     {
       id: 'notifications',
-      title: 'Notifications',
+      title: t('profile.notifications'),
       subtitle: 'Manage alerts and reminders',
       icon: Bell,
       color: '#FF9800',
@@ -145,7 +147,7 @@ export default function ProfileScreen() {
     },
     {
       id: 'general',
-      title: 'General Settings',
+      title: t('profile.settings'),
       subtitle: 'App preferences',
       icon: Settings,
       color: '#4CAF50',

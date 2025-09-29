@@ -10,6 +10,7 @@ import {
   
   Platform
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
   Calendar, 
@@ -44,6 +45,7 @@ interface Event {
 }
 
 export default function EventsScreen() {
+  const { t } = useTranslation();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [glowAnimation] = useState(new Animated.Value(0));
 
@@ -79,22 +81,22 @@ export default function EventsScreen() {
   const events: Event[] = [
     {
       id: '1',
-      title: 'Smart Irrigation Workshop',
-      description: 'Learn advanced drip irrigation techniques and water conservation methods for modern farming.',
+      title: t('events.smartIrrigation') || 'Smart Irrigation Workshop',
+      description: t('events.smartIrrigationDesc') || 'Learn advanced drip irrigation techniques and water conservation methods for modern farming.',
       date: '2024-01-28',
       time: '10:00 AM',
-      location: 'Agricultural Training Center, Pune',
+      location: t('events.agriculturalCenter') || 'Agricultural Training Center, Pune',
       type: 'workshop',
       participants: 45,
       status: 'live',
     },
     {
       id: '2',
-      title: 'Crop Disease Management Webinar',
-      description: 'Expert-led session on identifying and treating common crop diseases using AI-powered diagnostics.',
+      title: t('events.cropDiseaseManagement') || 'Crop Disease Management Webinar',
+      description: t('events.cropDiseaseDesc') || 'Expert-led session on identifying and treating common crop diseases using AI-powered diagnostics.',
       date: '2024-01-30',
       time: '2:00 PM',
-      location: 'Online Webinar',
+      location: t('events.onlineWebinar') || 'Online Webinar',
       type: 'webinar',
       participants: 120,
       status: 'upcoming',
@@ -106,11 +108,11 @@ export default function EventsScreen() {
     },
     {
       id: '3',
-      title: 'Best Harvest Competition',
-      description: 'Annual competition to showcase the best crop yields and innovative farming techniques.',
+      title: t('events.bestHarvest') || 'Best Harvest Competition',
+      description: t('events.bestHarvestDesc') || 'Annual competition to showcase the best crop yields and innovative farming techniques.',
       date: '2024-02-15',
       time: '9:00 AM',
-      location: 'State Agricultural Fair, Mumbai',
+      location: t('events.stateFair') || 'State Agricultural Fair, Mumbai',
       type: 'competition',
       participants: 200,
       status: 'upcoming',
@@ -122,11 +124,11 @@ export default function EventsScreen() {
     },
     {
       id: '4',
-      title: 'Organic Farming Masterclass',
-      description: 'Comprehensive training on organic farming practices, certification process, and market opportunities.',
+      title: t('events.organicFarming') || 'Organic Farming Masterclass',
+      description: t('events.organicFarmingDesc') || 'Comprehensive training on organic farming practices, certification process, and market opportunities.',
       date: '2024-01-25',
       time: '11:00 AM',
-      location: 'Rural Development Center, Nashik',
+      location: t('events.ruralCenter') || 'Rural Development Center, Nashik',
       type: 'workshop',
       participants: 78,
       status: 'completed',
@@ -174,7 +176,7 @@ export default function EventsScreen() {
         <View style={styles.eventHeader}>
           <View style={styles.eventTypeContainer}>
             {getEventIcon(event.type)}
-            <Text style={styles.eventType}>{event.type.toUpperCase()}</Text>
+            <Text style={styles.eventType}>{t(`events.${event.type}`)?.toUpperCase() || event.type.toUpperCase()}</Text>
           </View>
           <LinearGradient
             colors={getStatusColor(event.status)}
@@ -193,7 +195,7 @@ export default function EventsScreen() {
                 ]}
               />
             )}
-            <Text style={styles.statusText}>{event.status.toUpperCase()}</Text>
+            <Text style={styles.statusText}>{t(`events.${event.status}`)?.toUpperCase() || event.status.toUpperCase()}</Text>
           </LinearGradient>
         </View>
 
@@ -217,7 +219,7 @@ export default function EventsScreen() {
           </View>
           <View style={styles.detailRow}>
             <Users size={16} color="#6B7280" />
-            <Text style={styles.detailText}>{event.participants} participants</Text>
+            <Text style={styles.detailText}>{event.participants} {t('events.participants')}</Text>
           </View>
         </View>
 
@@ -229,7 +231,7 @@ export default function EventsScreen() {
               style={styles.countdownBg}
             >
               <Clock size={16} color="#4CAF50" />
-              <Text style={styles.countdownText}>Starts in: {formatCountdown(event.countdown)}</Text>
+              <Text style={styles.countdownText}>{t('events.startsIn')} {formatCountdown(event.countdown)}</Text>
             </LinearGradient>
           </View>
         )}
@@ -242,7 +244,7 @@ export default function EventsScreen() {
               style={styles.joinLiveButton}
             >
               <PlayCircle size={20} color="#FFFFFF" />
-              <Text style={styles.joinLiveText}>JOIN LIVE SESSION</Text>
+              <Text style={styles.joinLiveText}>{t('events.joinLive')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         )}
